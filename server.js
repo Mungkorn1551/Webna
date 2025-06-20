@@ -1,15 +1,18 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const mysql = require('mysql2');
 const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-
-// ตั้งค่า Multer สำหรับอัปโหลดไฟล์
+// ✅ ตั้งค่าอัปโหลดไฟล์
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
+    if (!fs.existsSync('uploads')) {
+      fs.mkdirSync('uploads');
+    }
     cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
@@ -19,57 +22,66 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Middleware
+// ✅ Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
-// รับข้อมูลจากฟอร์ม
+// ✅ เชื่อมต่อฐานข้อมูล MySQL
+const db = mysql.createConnection({
+  host: 'localhost',     // หรือ hostname ของคุณ เช่น '127.0.0.1' หรือ host จาก Render
+  user: 'root',          // เปลี่ยนตามที่คุณตั้งไว้
+  password: '',          // ถ้ามีรหัสให้ใส่
+  database: 'hi_form'    // ชื่อฐานข้อมูลที่คุณสร้างไว้
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error('❌ ไม่สามารถเชื่อมต่อ MySQL:', err);
+  } else {
+    console.log('✅ เชื่อมต่อ MySQL สำเร็จ');
+  }
+});
+
+// ✅ รับข้อมูลจากฟอร์มแล้วบันทึกลง MySQL
 app.post('/submit', upload.single('photo'), (req, res) => {
-  const formData = {
-    name: req.body.name,
-    phone: req.body.phone,
-    address: req.body.address,
-    category: req.body.category,
-    message: req.body.message,
-    latitude: req.body.latitude,
-    longitude: req.body.longitude,
-    photo: req.file ? req.file.filename : null,
-  };
+  const { name, phone, address, category, message, latitude, longitude } = req.body;
+  const photo = req.file ? req.file.filename : null;
 
-  const existingData = fs.existsSync('data.json')
-    ? JSON.parse(fs.readFileSync('data.json'))
-    : [];
+  const sql = `
+    INSERT INTO requests 
+    (name, phone, address, category, message, latitude, longitude, photo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
 
-  existingData.push(formData);
+  const values = [name, phone, address, category, message, latitude, longitude, photo];
 
-  fs.writeFileSync('data.json', JSON.stringify(existingData, null, 2));
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
+      return res.status(500).send('❌ บันทึกไม่สำเร็จ');
+    }
 
-  res.send(`
-    <h2>✅ ส่งคำร้องสำเร็จ</h2>
-    <p>ขอบคุณ ${formData.name}</p>
-    <p><a href="/">🔙 กลับหน้าหลัก</a></p>
-  `);
+    console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
+    res.send(`
+      <h2>✅ ส่งคำร้องสำเร็จ</h2>
+      <p>ขอบคุณ ${name}</p>
+      <p><a href="/">🔙 กลับหน้าหลัก</a></p>
+    `);
+  });
 });
 
-// แสดงข้อมูลแบบ JSON
+// ✅ (ทางเลือก) route ดูข้อมูลแบบ JSON
 app.get('/data', (req, res) => {
-  const data = fs.existsSync('data.json')
-    ? JSON.parse(fs.readFileSync('data.json'))
-    : [];
-
-  res.setHeader('Content-Type', 'application/json');
-  res.send(JSON.stringify(data, null, 2));
+  db.query('SELECT * FROM requests ORDER BY id DESC', (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    }
+    res.json(results);
+  });
 });
 
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-}
-
-
-
-
-// Start server
+// ✅ Start server
 app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`);
+  console.log(`🚀 Server running at http://localhost:${port}`);
 });
