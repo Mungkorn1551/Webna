@@ -29,11 +29,13 @@ app.use('/uploads', express.static('uploads'));
 
 // ✅ เชื่อมต่อฐานข้อมูล MySQL
 const db = mysql.createConnection({
-  host: 'localhost',     // หรือ hostname ของคุณ เช่น '127.0.0.1' หรือ host จาก Render
-  user: 'root',          // เปลี่ยนตามที่คุณตั้งไว้
-  password: '',          // ถ้ามีรหัสให้ใส่
-  database: 'hi_form'    // ชื่อฐานข้อมูลที่คุณสร้างไว้
+  host: 'shortline.proxy.rlwy.net',
+  port: 32724, // ✅ เพิ่มบรรทัดนี้
+  user: 'root',
+  password: 'TEwgIdrYsoKqZtnFnVeJnwgAyQSYxeLF',
+  database: 'railway'
 });
+
 
 db.connect((err) => {
   if (err) {
