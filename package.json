@@ -14,13 +14,9 @@
   "description": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Mungkorn1551/Hi.git"
+    "url": "https://github.com/Mungkorn1551/Hi.git"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Mungkorn1551/Hi/issues"
-  },
-  "homepage": "https://github.com/Mungkorn1551/Hi#readme"
+  "license": "ISC"
 }

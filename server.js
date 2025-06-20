@@ -61,6 +61,13 @@ app.get('/data', (req, res) => {
   res.send(JSON.stringify(data, null, 2));
 });
 
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
+
+
+
 // Start server
 app.listen(port, () => {
   console.log(`✅ Server running on port ${port}`);
