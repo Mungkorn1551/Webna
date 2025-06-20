@@ -4,12 +4,12 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const port = process.env.PORT || 3000; // ✅ ต้องใช้แบบนี้บน Render
+const port = process.env.PORT || 3000; // ✅ สำคัญมากสำหรับ Render
 
-// ตั้งค่าการเก็บไฟล์ด้วย Multer
+// ตั้งค่า Multer สำหรับอัปโหลดไฟล์
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // โฟลเดอร์ปลายทาง
+    cb(null, 'uploads/');
   },
   filename: function (req, file, cb) {
     const uniqueName = Date.now() + path.extname(file.originalname);
@@ -51,7 +51,7 @@ app.post('/submit', upload.single('photo'), (req, res) => {
   `);
 });
 
-// แสดงข้อมูลทั้งหมด
+// แสดงข้อมูลแบบ JSON
 app.get('/data', (req, res) => {
   const data = fs.existsSync('data.json')
     ? JSON.parse(fs.readFileSync('data.json'))
@@ -61,6 +61,7 @@ app.get('/data', (req, res) => {
   res.send(JSON.stringify(data, null, 2));
 });
 
+// Start server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`✅ Server running on port ${port}`);
 });
