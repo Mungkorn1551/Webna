@@ -1,11 +1,10 @@
-// server.js
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // ✅ ต้องใช้แบบนี้บน Render
 
 // ตั้งค่าการเก็บไฟล์ด้วย Multer
 const storage = multer.diskStorage({
@@ -22,7 +21,7 @@ const upload = multer({ storage });
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads')); // ให้เข้าถึงรูปที่อัปโหลด
+app.use('/uploads', express.static('uploads'));
 
 // รับข้อมูลจากฟอร์ม
 app.post('/submit', upload.single('photo'), (req, res) => {
@@ -37,7 +36,6 @@ app.post('/submit', upload.single('photo'), (req, res) => {
     photo: req.file ? req.file.filename : null,
   };
 
-  // บันทึกข้อมูลลงไฟล์ JSON
   const existingData = fs.existsSync('data.json')
     ? JSON.parse(fs.readFileSync('data.json'))
     : [];
@@ -53,7 +51,7 @@ app.post('/submit', upload.single('photo'), (req, res) => {
   `);
 });
 
-// ✅ เส้นทางแสดงข้อมูลทั้งหมดแบบ JSON
+// แสดงข้อมูลทั้งหมด
 app.get('/data', (req, res) => {
   const data = fs.existsSync('data.json')
     ? JSON.parse(fs.readFileSync('data.json'))
@@ -63,7 +61,6 @@ app.get('/data', (req, res) => {
   res.send(JSON.stringify(data, null, 2));
 });
 
-// เริ่มเซิร์ฟเวอร์
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });
