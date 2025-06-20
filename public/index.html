@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ส่งคำร้อง - อบต.ท่าช้าง จ.จันทบุรี</title>
+
+    <!-- ฟอนต์ -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit&display=swap');
+    </style>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background: linear-gradient(135deg, #a7d8de 0%, #1c6559 100%);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #1c3d2d;
+        }
+
+        .container {
+            background-color: #f9f9f6;
+            padding: 2.5rem 3rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(28, 101, 89, 0.3);
+            max-width: 480px;
+            width: 90%;
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: #15563b;
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            margin-top: 1.2rem;
+            font-weight: 600;
+            color: #2a4d38;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            margin-top: 0.3rem;
+            border: 1.8px solid #4a7c59;
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: #fbfcf9;
+        }
+
+        button {
+            margin-top: 1.2rem;
+            width: 100%;
+            padding: 1rem;
+            background-color: #1c6a46;
+            color: #f9f9f4;
+            font-size: 1.15rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #map {
+            height: 250px;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .use-location-btn {
+            margin-bottom: 1rem;
+            background-color: #145031;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem 1.2rem;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+            }
+
+            button {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ส่งคำร้อง อบต.ท่าช้าง จ.จันทบุรี</h1>
+
+        <form action="/submit" method="post" enctype="multipart/form-data">
+
+            <label>ปักหมุดตำแหน่งที่เกิดเหตุ:</label>
+            <div id="map"></div>
+
+            <button type="button" class="use-location-btn" onclick="useMyLocation()">📍 ใช้ตำแหน่งของฉัน</button>
+
+            <input type="hidden" name="latitude" id="latitude" required>
+            <input type="hidden" name="longitude" id="longitude" required>
+
+            <label>ชื่อ:</label>
+            <input type="text" name="name" required>
+
+            <label>เบอร์โทรศัพท์:</label>
+            <input type="tel" name="phone" required>
+
+            <label>ที่อยู่:</label>
+            <textarea name="address" rows="2" required></textarea>
+
+            <label>หมวดหมู่คำร้อง:</label>
+            <select name="category" required>
+                <option value="ต้นไม้">🌳 จัดการต้นไม้</option>
+                <option value="ขยะ">🗑️ ขยะ</option>
+                <option value="ไฟฟ้า">⚡ ไฟฟ้า</option>
+                <option value="ลอกท่อและครอง">🚰 ลอกท่อและคลอง</option>
+            </select>
+
+            <label>ข้อความ:</label>
+            <textarea name="message" rows="5" required></textarea>
+
+            <label>แนบรูปภาพ (ถ้ามี):</label>
+            <input type="file" name="photo" accept="image/*">
+
+            <button type="submit">📩 ส่งคำร้อง</button>
+        </form>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const map = L.map('map').setView([12.616, 102.104], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let marker = null;
+
+        function setMarker(latlng) {
+            if (marker) {
+                marker.setLatLng(latlng);
+            } else {
+                marker = L.marker(latlng).addTo(map);
+            }
+            document.getElementById('latitude').value = latlng.lat.toFixed(6);
+            document.getElementById('longitude').value = latlng.lng.toFixed(6);
+        }
+
+        function useMyLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const userLatLng = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setView(userLatLng, 15);
+                        setMarker(userLatLng);
+                    },
+                    (error) => {
+                        alert("ไม่สามารถเข้าถึงตำแหน่งของคุณได้: " + error.message);
+                    }
+                );
+            } else {
+                alert("เบราว์เซอร์ไม่รองรับ Geolocation");
+            }
+        }
+
+        map.on('click', function(e) {
+            setMarker(e.latlng);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>รายการคำร้องที่ได้รับ</title>
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      background: #eef3f2;
+      padding: 2rem;
+    }
+
+    h1 {
+      text-align: center;
+      color: #15563b;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #bbb;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background-color: #1c6559;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    img {
+      max-width: 120px;
+      border-radius: 8px;
+    }
+
+    .map-link {
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>รายการคำร้องที่ได้รับ</h1>
+  <table id="reportTable">
+    <thead>
+      <tr>
+        <th>ชื่อ</th>
+        <th>เบอร์โทร</th>
+        <th>ที่อยู่</th>
+        <th>หมวดหมู่</th>
+        <th>ข้อความ</th>
+        <th>ตำแหน่ง</th>
+        <th>รูปภาพ</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    fetch('/data')
+      .then(response => response.json())
+      .then(data => {
+        const tableBody = document.querySelector('#reportTable tbody');
+        data.forEach(item => {
+          const row = document.createElement('tr');
+
+          row.innerHTML = `
+            <td>${item.name}</td>
+            <td>${item.phone}</td>
+            <td>${item.address}</td>
+            <td>${item.category}</td>
+            <td>${item.message}</td>
+            <td>
+              <div>Lat: ${item.latitude}<br>Lng: ${item.longitude}</div>
+              <a class="map-link" href="https://www.google.com/maps?q=${item.latitude},${item.longitude}" target="_blank">ดูบนแผนที่</a>
+            </td>
+            <td>
+              ${item.photo ? `<img src="/uploads/${item.photo}" alt="รูปแนบ">` : '-'}
+            </td>
+          `;
+
+          tableBody.appendChild(row);
+        });
+      });
+  </script>
+</body>
+</html>
