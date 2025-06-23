@@ -107,6 +107,8 @@
         <th>อนุมัติ</th>
         <th>แผนก</th>
         <th>สถานะ</th>
+        <th>หมวดหมู่</th>
+        <th>แผนที่</th>
         <th>จัดการ</th>
       </tr>
     </thead>
@@ -120,18 +122,22 @@
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
       data.forEach(row => {
-        const tr = document.createElement("tr");
         const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
+        const mapLink = row.latitude && row.longitude
+          ? `<a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
+          : "-";
+
+        const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row.name}</td>
           <td>${row.phone}</td>
           <td>${row.message}</td>
           <td><img src="${row.photo}" alt="รูปภาพ"></td>
-          <td>
-            ${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}
-          </td>
+          <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>
+          <td>${row.category || "-"}</td>
+          <td>${mapLink}</td>
           <td>
             <button class="btn approve" onclick="approve(${row.id})">✅ อนุมัติ</button><br>
             <button class="btn reject" onclick="reject(${row.id})">❌ ไม่อนุมัติ</button><br>
