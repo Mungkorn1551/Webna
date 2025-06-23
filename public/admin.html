@@ -9,6 +9,9 @@
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background-color: #15563b; color: white; }
     select, button { padding: 5px; }
+    .status-จบ { color: green; }
+    .status-แจ้งหัวหน้า { color: orange; }
+    .status-pending { color: red; }
   </style>
 </head>
 <body>
@@ -36,30 +39,33 @@
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
       data.forEach(row => {
+        const approvedIcon = row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓";
+        const approveBtn = row.approved === 1 ? "" : `<button onclick="approve(${row.id})">✅</button>`;
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row.name}</td>
           <td>${row.phone}</td>
           <td>${row.message}</td>
           <td><img src="${row.photo}" width="100"></td>
-          <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
+          <td>${approvedIcon}</td>
           <td>${row.department || "-"}</td>
-          <td>${row.status}</td>
+          <td class="status-${row.status}">${row.status}</td>
           <td>
-            <button onclick="approve(${row.id})">✅</button>
+            ${approveBtn}
             <select onchange="setDept(${row.id}, this.value)">
               <option value="">เลือกแผนก</option>
-              <option>ไฟฟ้า</option>
-              <option>สป</option>
-              <option>กช</option>
-              <option>อื่นๆ</option>
+              <option ${row.department==='ไฟฟ้า'?'selected':''}>ไฟฟ้า</option>
+              <option ${row.department==='สป'?'selected':''}>สป</option>
+              <option ${row.department==='กช'?'selected':''}>กช</option>
+              <option ${row.department==='อื่นๆ'?'selected':''}>อื่นๆ</option>
             </select><br>
             <select onchange="setStatus(${row.id}, this.value)">
               <option value="">สถานะ</option>
-              <option>pending</option>
-              <option>รอดำเนินการ</option>
-              <option>แจ้งหัวหน้า</option>
-              <option>จบ</option>
+              <option ${row.status==='pending'?'selected':''}>pending</option>
+              <option ${row.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option>
+              <option ${row.status==='แจ้งหัวหน้า'?'selected':''}>แจ้งหัวหน้า</option>
+              <option ${row.status==='จบ'?'selected':''}>จบ</option>
             </select>
           </td>
         `;
