@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>จัดการคำร้อง (Admin)</title>
+  <style>
+    body { font-family: 'Kanit', sans-serif; padding: 20px; background: #f2f2f2; }
+    table { border-collapse: collapse; width: 100%; background: white; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #15563b; color: white; }
+    select, button { padding: 5px; }
+  </style>
+</head>
+<body>
+  <h2>📋 รายการคำร้องทั้งหมด</h2>
+  <table id="data-table">
+    <thead>
+      <tr>
+        <th>ชื่อ</th>
+        <th>เบอร์</th>
+        <th>ข้อความ</th>
+        <th>รูป</th>
+        <th>อนุมัติ</th>
+        <th>แผนก</th>
+        <th>สถานะ</th>
+        <th>จัดการ</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function loadData() {
+      const res = await fetch('/data');
+      const data = await res.json();
+      const tbody = document.querySelector("tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.name}</td>
+          <td>${row.phone}</td>
+          <td>${row.message}</td>
+          <td><img src="${row.photo}" width="100"></td>
+          <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
+          <td>${row.department || "-"}</td>
+          <td>${row.status}</td>
+          <td>
+            <button onclick="approve(${row.id})">✅</button>
+            <select onchange="setDept(${row.id}, this.value)">
+              <option value="">เลือกแผนก</option>
+              <option>ไฟฟ้า</option>
+              <option>สป</option>
+              <option>กช</option>
+              <option>อื่นๆ</option>
+            </select><br>
+            <select onchange="setStatus(${row.id}, this.value)">
+              <option value="">สถานะ</option>
+              <option>pending</option>
+              <option>รอดำเนินการ</option>
+              <option>แจ้งหัวหน้า</option>
+              <option>จบ</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function approve(id) {
+      await fetch(`/approve/${id}`, { method: 'POST' });
+      loadData();
+    }
+
+    async function setDept(id, dept) {
+      await fetch(`/set-department/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ department: dept })
+      });
+      loadData();
+    }
+
+    async function setStatus(id, status) {
+      await fetch(`/set-status/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      loadData();
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
