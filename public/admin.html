@@ -2,16 +2,75 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>จัดการคำร้อง (Admin)</title>
+  <title>📋 จัดการคำร้อง (Admin)</title>
   <style>
-    body { font-family: 'Kanit', sans-serif; padding: 20px; background: #f2f2f2; }
-    table { border-collapse: collapse; width: 100%; background: white; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background-color: #15563b; color: white; }
-    select, button { padding: 5px; }
-    .status-จบ { color: green; }
-    .status-แจ้งหัวหน้า { color: orange; }
-    .status-pending { color: red; }
+    body {
+      font-family: 'Kanit', sans-serif;
+      background: #f9f9f9;
+      padding: 30px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #15563b;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #15563b;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    img {
+      border-radius: 6px;
+      max-width: 100px;
+      max-height: 80px;
+    }
+
+    button {
+      background-color: #22c55e;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    button:hover {
+      background-color: #16a34a;
+    }
+
+    select {
+      padding: 5px;
+      border-radius: 6px;
+      margin-top: 4px;
+    }
+
+    .status {
+      font-weight: bold;
+    }
+
+    .status.pending { color: #f97316; }
+    .status.รอดำเนินการ { color: #eab308; }
+    .status.แจ้งหัวหน้า { color: #0ea5e9; }
+    .status.จบ { color: #16a34a; }
   </style>
 </head>
 <body>
@@ -39,33 +98,33 @@
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
       data.forEach(row => {
-        const approvedIcon = row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓";
-        const approveBtn = row.approved === 1 ? "" : `<button onclick="approve(${row.id})">✅</button>`;
-
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row.name}</td>
           <td>${row.phone}</td>
           <td>${row.message}</td>
-          <td><img src="${row.photo}" width="100"></td>
-          <td>${approvedIcon}</td>
-          <td>${row.department || "-"}</td>
-          <td class="status-${row.status}">${row.status}</td>
+          <td><img src="${row.photo}" alt="รูปภาพ"></td>
           <td>
-            ${approveBtn}
+            ${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}
+          </td>
+          <td>${row.department || "-"}</td>
+          <td class="status ${row.status}">${row.status || "-"}</td>
+          <td>
+            <button onclick="approve(${row.id})">✅ อนุมัติ</button><br>
+            <button onclick="reject(${row.id})" style="background:#ef4444;">❌ ไม่อนุมัติ</button><br>
             <select onchange="setDept(${row.id}, this.value)">
               <option value="">เลือกแผนก</option>
-              <option ${row.department==='ไฟฟ้า'?'selected':''}>ไฟฟ้า</option>
-              <option ${row.department==='สป'?'selected':''}>สป</option>
-              <option ${row.department==='กช'?'selected':''}>กช</option>
-              <option ${row.department==='อื่นๆ'?'selected':''}>อื่นๆ</option>
+              <option>ไฟฟ้า</option>
+              <option>สป</option>
+              <option>กช</option>
+              <option>อื่นๆ</option>
             </select><br>
             <select onchange="setStatus(${row.id}, this.value)">
               <option value="">สถานะ</option>
-              <option ${row.status==='pending'?'selected':''}>pending</option>
-              <option ${row.status==='รอดำเนินการ'?'selected':''}>รอดำเนินการ</option>
-              <option ${row.status==='แจ้งหัวหน้า'?'selected':''}>แจ้งหัวหน้า</option>
-              <option ${row.status==='จบ'?'selected':''}>จบ</option>
+              <option>pending</option>
+              <option>รอดำเนินการ</option>
+              <option>แจ้งหัวหน้า</option>
+              <option>จบ</option>
             </select>
           </td>
         `;
@@ -75,6 +134,11 @@
 
     async function approve(id) {
       await fetch(`/approve/${id}`, { method: 'POST' });
+      loadData();
+    }
+
+    async function reject(id) {
+      await fetch(`/reject/${id}`, { method: 'POST' });
       loadData();
     }
 
