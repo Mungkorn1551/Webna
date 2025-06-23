@@ -85,10 +85,8 @@
       font-weight: bold;
     }
 
-    .status.pending { color: #f97316; }
-    .status.รอดำเนินการ { color: #eab308; }
-    .status.แจ้งหัวหน้า { color: #0ea5e9; }
-    .status.จบ { color: #16a34a; }
+    .status.รอตรวจสอบ { color: #f97316; }
+    .status.เสร็จสิ้น { color: #16a34a; }
   </style>
 </head>
 <body>
@@ -138,11 +136,8 @@
               <option>อื่นๆ</option>
             </select><br>
             <select onchange="setStatus(${row.id}, this.value)">
-              <option value="">สถานะ</option>
-              
-              <option>รอดำเนินการ</option>
-              <option>แจ้งหัวหน้า</option>
-              <option>จบ</option>
+              <option ${row.status === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option>
+              <option ${row.status === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
             </select>
           </td>
         `;
