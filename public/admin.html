@@ -43,24 +43,42 @@
       max-height: 80px;
     }
 
-    button {
-      background-color: #22c55e;
-      color: white;
+    .btn {
+      padding: 6px 14px;
+      font-size: 14px;
       border: none;
-      padding: 6px 10px;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      margin-top: 4px;
+      margin: 4px 0;
+      transition: 0.2s ease;
+      width: 100px;
+      font-family: 'Kanit', sans-serif;
     }
 
-    button:hover {
+    .btn.approve {
+      background-color: #22c55e;
+      color: white;
+    }
+
+    .btn.approve:hover {
       background-color: #16a34a;
     }
 
+    .btn.reject {
+      background-color: #ef4444;
+      color: white;
+    }
+
+    .btn.reject:hover {
+      background-color: #dc2626;
+    }
+
     select {
-      padding: 5px;
+      padding: 6px;
       border-radius: 6px;
-      margin-top: 4px;
+      margin-top: 6px;
+      width: 100px;
+      font-family: 'Kanit', sans-serif;
     }
 
     .status {
@@ -110,8 +128,8 @@
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${row.status || "-"}</td>
           <td>
-            <button onclick="approve(${row.id})">✅ อนุมัติ</button><br>
-            <button onclick="reject(${row.id})" style="background:#ef4444;">❌ ไม่อนุมัติ</button><br>
+            <button class="btn approve" onclick="approve(${row.id})">✅ อนุมัติ</button><br>
+            <button class="btn reject" onclick="reject(${row.id})">❌ ไม่อนุมัติ</button><br>
             <select onchange="setDept(${row.id}, this.value)">
               <option value="">เลือกแผนก</option>
               <option>ไฟฟ้า</option>
