@@ -1,23 +1,26 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
 const mysql = require('mysql2');
-const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ✅ ตั้งค่าอัปโหลดไฟล์
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    if (!fs.existsSync('uploads')) {
-      fs.mkdirSync('uploads');
-    }
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueName = Date.now() + path.extname(file.originalname);
-    cb(null, uniqueName);
+// ✅ ตั้งค่า Cloudinary (ใส่ข้อมูลของคุณ)
+cloudinary.config({
+  cloud_name: 'dmaijyfud',
+  api_key: '962872364982724',
+  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g'
+});
+
+// ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'obtc-uploads', // ชื่อโฟลเดอร์ใน Cloudinary
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    public_id: (req, file) => Date.now() // ตั้งชื่อไฟล์ตาม timestamp
   }
 });
 const upload = multer({ storage });
@@ -25,17 +28,15 @@ const upload = multer({ storage });
 // ✅ Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
 
-// ✅ เชื่อมต่อฐานข้อมูล MySQL
+// ✅ เชื่อมต่อฐานข้อมูล MySQL (Railway)
 const db = mysql.createConnection({
   host: 'shortline.proxy.rlwy.net',
-  port: 32724, // ✅ เพิ่มบรรทัดนี้
+  port: 32724,
   user: 'root',
   password: 'TEwgIdrYsoKqZtnFnVeJnwgAyQSYxeLF',
   database: 'railway'
 });
-
 
 db.connect((err) => {
   if (err) {
@@ -45,10 +46,10 @@ db.connect((err) => {
   }
 });
 
-// ✅ รับข้อมูลจากฟอร์มแล้วบันทึกลง MySQL
+// ✅ รับข้อมูลจากฟอร์มและบันทึก URL รูปจาก Cloudinary
 app.post('/submit', upload.single('photo'), (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
-  const photo = req.file ? req.file.filename : null;
+  const photo = req.file ? req.file.path : null; // Cloudinary URL
 
   const sql = `
     INSERT INTO requests 
@@ -73,7 +74,7 @@ app.post('/submit', upload.single('photo'), (req, res) => {
   });
 });
 
-// ✅ (ทางเลือก) route ดูข้อมูลแบบ JSON
+// ✅ ดึงข้อมูลทั้งหมดแบบ JSON
 app.get('/data', (req, res) => {
   db.query('SELECT * FROM requests ORDER BY id DESC', (err, results) => {
     if (err) {
