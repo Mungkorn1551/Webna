@@ -40,10 +40,41 @@
     img {
       max-width: 120px;
       border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    img:hover {
+      transform: scale(1.1);
     }
 
     .map-link {
       font-size: 0.9rem;
+    }
+
+    /* Modal style */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+    }
+
+    .modal-content {
+      display: block;
+      margin: 5% auto;
+      max-width: 90%;
+      max-height: 80%;
+    }
+
+    .modal-content img {
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
     }
   </style>
 </head>
@@ -64,6 +95,13 @@
     <tbody></tbody>
   </table>
 
+  <!-- modal for enlarged image -->
+  <div id="imgModal" class="modal" onclick="this.style.display='none'">
+    <div class="modal-content">
+      <img id="modalImg" src="" alt="รูปใหญ่">
+    </div>
+  </div>
+
   <script>
     fetch('/data')
       .then(response => response.json())
@@ -71,6 +109,10 @@
         const tableBody = document.querySelector('#reportTable tbody');
         data.forEach(item => {
           const row = document.createElement('tr');
+
+          const imageHTML = item.photo
+            ? `<img src="${item.photo}" alt="แนบรูป" onclick="showModal('${item.photo}')">`
+            : '-';
 
           row.innerHTML = `
             <td>${item.name}</td>
@@ -82,14 +124,19 @@
               <div>Lat: ${item.latitude}<br>Lng: ${item.longitude}</div>
               <a class="map-link" href="https://www.google.com/maps?q=${item.latitude},${item.longitude}" target="_blank">ดูบนแผนที่</a>
             </td>
-            <td>
-              ${item.photo ? `<img src="/uploads/${item.photo}" alt="รูปแนบ">` : '-'}
-            </td>
+            <td>${imageHTML}</td>
           `;
 
           tableBody.appendChild(row);
         });
       });
+
+    function showModal(url) {
+      const modal = document.getElementById('imgModal');
+      const modalImg = document.getElementById('modalImg');
+      modal.style.display = 'block';
+      modalImg.src = url;
+    }
   </script>
 </body>
 </html>
