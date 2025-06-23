@@ -85,8 +85,14 @@
       font-weight: bold;
     }
 
-    .status.รอตรวจสอบ { color: #f97316; }
-    .status.เสร็จสิ้น { color: #16a34a; }
+    .status.รอตรวจสอบ,
+    .status.pending {
+      color: #f97316;
+    }
+
+    .status.เสร็จสิ้น {
+      color: #16a34a;
+    }
   </style>
 </head>
 <body>
@@ -115,6 +121,7 @@
       tbody.innerHTML = "";
       data.forEach(row => {
         const tr = document.createElement("tr");
+        const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
         tr.innerHTML = `
           <td>${row.name}</td>
           <td>${row.phone}</td>
@@ -124,7 +131,7 @@
             ${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}
           </td>
           <td>${row.department || "-"}</td>
-          <td class="status ${row.status}">${row.status || "-"}</td>
+          <td class="status ${row.status}">${statusText}</td>
           <td>
             <button class="btn approve" onclick="approve(${row.id})">✅ อนุมัติ</button><br>
             <button class="btn reject" onclick="reject(${row.id})">❌ ไม่อนุมัติ</button><br>
