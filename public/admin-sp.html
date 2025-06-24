@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>📋 คำร้อง สำนักงานปลัด</title>
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      background: #f9f9f9;
+      padding: 30px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #15563b;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #15563b;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    img {
+      border-radius: 6px;
+      max-width: 100px;
+      max-height: 80px;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 4px 0;
+      transition: 0.2s ease;
+      width: 100px;
+      font-family: 'Kanit', sans-serif;
+    }
+
+    .btn.approve {
+      background-color: #22c55e;
+      color: white;
+    }
+
+    .btn.approve:hover {
+      background-color: #16a34a;
+    }
+
+    .btn.reject {
+      background-color: #ef4444;
+      color: white;
+    }
+
+    .btn.reject:hover {
+      background-color: #dc2626;
+    }
+
+    select {
+      padding: 6px;
+      border-radius: 6px;
+      margin-top: 6px;
+      width: 100px;
+      font-family: 'Kanit', sans-serif;
+    }
+
+    .status {
+      font-weight: bold;
+    }
+
+    .status.รอตรวจสอบ,
+    .status.pending {
+      color: #f97316;
+    }
+
+    .status.เสร็จสิ้น {
+      color: #16a34a;
+    }
+  </style>
+</head>
+<body>
+  <h2>📋 รายการคำร้อง - สำนักงานปลัด</h2>
+  <table id="data-table">
+    <thead>
+      <tr>
+        <th>ชื่อ</th>
+        <th>เบอร์</th>
+        <th>ข้อความ</th>
+        <th>รูป</th>
+        <th>อนุมัติ</th>
+        <th>แผนก</th>
+        <th>สถานะ</th>
+        <th>หมวดหมู่</th>
+        <th>แผนที่</th>
+        <th>จัดการ</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function loadData() {
+      const res = await fetch('/data?department=สำนักงานปลัด');
+      const data = await res.json();
+      const tbody = document.querySelector("tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
+        const mapLink = row.latitude && row.longitude
+          ? `<a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
+          : "-";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.name}</td>
+          <td>${row.phone}</td>
+          <td>${row.message}</td>
+          <td><img src="${row.photo}" alt="รูปภาพ"></td>
+          <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
+          <td>${row.department || "-"}</td>
+          <td class="status ${row.status}">${statusText}</td>
+          <td>${row.category || "-"}</td>
+          <td>${mapLink}</td>
+          <td>
+            <button class="btn approve" onclick="approve(${row.id})">✅ อนุมัติ</button><br>
+            <button class="btn reject" onclick="reject(${row.id})">❌ ไม่อนุมัติ</button><br>
+            <select onchange="setDept(${row.id}, this.value)">
+              <option value="">เลือกแผนก</option>
+              <option value="สำนักงานปลัด" ${row.department === 'สำนักงานปลัด' ? 'selected' : ''}>สำนักงานปลัด</option>
+              <option value="สาธารณสุข" ${row.department === 'สาธารณสุข' ? 'selected' : ''}>สาธารณสุข</option>
+              <option value="กองช่าง" ${row.department === 'กองช่าง' ? 'selected' : ''}>กองช่าง</option>
+              <option value="ไฟฟ้า" ${row.department === 'ไฟฟ้า' ? 'selected' : ''}>ไฟฟ้า</option>
+              <option value="อื่นๆ" ${row.department === 'อื่นๆ' ? 'selected' : ''}>อื่นๆ</option>
+            </select><br>
+            <select onchange="setStatus(${row.id}, this.value)">
+              <option ${row.status === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option>
+              <option ${row.status === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function approve(id) {
+      await fetch(`/approve/${id}`, { method: 'POST' });
+      loadData();
+    }
+
+    async function reject(id) {
+      await fetch(`/reject/${id}`, { method: 'POST' });
+      loadData();
+    }
+
+    async function setDept(id, dept) {
+      await fetch(`/set-department/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ department: dept })
+      });
+      loadData();
+    }
+
+    async function setStatus(id, status) {
+      await fetch(`/set-status/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      loadData();
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
