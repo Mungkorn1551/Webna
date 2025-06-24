@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>📋 จัดการคำร้อง (Admin)</title>
   <style>
     body {
       font-family: 'Kanit', sans-serif;
-      background: #f9f9f9;
-      padding: 30px;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 20px;
     }
 
     h2 {
@@ -19,14 +20,16 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      background: #fff;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      background-color: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     th, td {
-      padding: 12px 10px;
+      padding: 14px 10px;
       text-align: center;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     th {
@@ -38,9 +41,9 @@
     }
 
     img {
+      max-width: 80px;
+      max-height: 60px;
       border-radius: 6px;
-      max-width: 100px;
-      max-height: 80px;
     }
 
     .btn {
@@ -50,9 +53,13 @@
       border-radius: 8px;
       cursor: pointer;
       margin: 4px 0;
-      transition: 0.2s ease;
-      width: 100px;
+      transition: background-color 0.2s ease;
       font-family: 'Kanit', sans-serif;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .btn.approve {
@@ -60,24 +67,24 @@
       color: white;
     }
 
-    .btn.approve:hover {
-      background-color: #16a34a;
-    }
-
     .btn.reject {
       background-color: #ef4444;
       color: white;
     }
 
-    .btn.reject:hover {
+    .btn.approve:hover:not(:disabled) {
+      background-color: #16a34a;
+    }
+
+    .btn.reject:hover:not(:disabled) {
       background-color: #dc2626;
     }
 
     select {
       padding: 6px;
       border-radius: 6px;
-      margin-top: 6px;
-      width: 100px;
+      margin: 4px 0;
+      width: 110px;
       font-family: 'Kanit', sans-serif;
     }
 
@@ -92,6 +99,33 @@
 
     .status.เสร็จสิ้น {
       color: #16a34a;
+    }
+
+    a.map-link {
+      text-decoration: none;
+      color: #2563eb;
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+
+      th {
+        position: static;
+      }
+
+      td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+
+      td:before {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+      }
     }
   </style>
 </head>
@@ -124,23 +158,25 @@
       data.forEach(row => {
         const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
         const mapLink = row.latitude && row.longitude
-          ? `<a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
+          ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
           : "-";
+
+        const isDeptSelected = row.department && row.department !== "-";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${row.name}</td>
-          <td>${row.phone}</td>
-          <td>${row.message}</td>
-          <td><img src="${row.photo}" alt="รูปภาพ"></td>
+          <td>${row.name || "-"}</td>
+          <td>${row.phone || "-"}</td>
+          <td>${row.message || "-"}</td>
+          <td>${row.photo ? `<img src="${row.photo}" alt="รูป">` : "-"}</td>
           <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>
           <td>${mapLink}</td>
           <td>
-            <button class="btn approve" id="approve-${row.id}" onclick="approve(${row.id})" disabled>✅ อนุมัติ</button><br>
-            <button class="btn reject" id="reject-${row.id}" onclick="reject(${row.id})" disabled>❌ ไม่อนุมัติ</button><br>
-            <select onchange="setDept(${row.id}, this.value); toggleApproveButtons(${row.id}, this.value)">
+            <button class="btn approve" onclick="approve(${row.id})" ${!isDeptSelected ? 'disabled' : ''}>✅ อนุมัติ</button><br>
+            <button class="btn reject" onclick="reject(${row.id})" ${!isDeptSelected ? 'disabled' : ''}>❌ ไม่อนุมัติ</button><br>
+            <select onchange="setDept(${row.id}, this.value)">
               <option value="">เลือกแผนก</option>
               <option value="สำนักงานปลัด" ${row.department === 'สำนักงานปลัด' ? 'selected' : ''}>สำนักงานปลัด</option>
               <option value="สาธารณสุข" ${row.department === 'สาธารณสุข' ? 'selected' : ''}>สาธารณสุข</option>
@@ -155,21 +191,7 @@
           </td>
         `;
         tbody.appendChild(tr);
-
-        // เปิดปุ่มถ้ามีแผนกแล้ว
-        if (row.department) {
-          toggleApproveButtons(row.id, row.department);
-        }
       });
-    }
-
-    function toggleApproveButtons(id, department) {
-      const approveBtn = document.getElementById(`approve-${id}`);
-      const rejectBtn = document.getElementById(`reject-${id}`);
-      const enabled = department && department !== '';
-
-      approveBtn.disabled = !enabled;
-      rejectBtn.disabled = !enabled;
     }
 
     async function approve(id) {
@@ -188,6 +210,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ department: dept })
       });
+      loadData();
     }
 
     async function setStatus(id, status) {
