@@ -115,6 +115,7 @@ app.post('/submit', upload.single('photo'), (req, res) => {
   });
 });
 
+// ✅ สำหรับ admin.html: ดึงคำร้องที่ยังไม่ processed
 app.get('/data', (req, res) => {
   const department = req.query.department;
 
@@ -122,13 +123,35 @@ app.get('/data', (req, res) => {
   const params = [];
 
   if (department) {
-    sql += ' AND department = ? AND approved = 1';
+    sql += ' AND department = ?';
     params.push(department);
   }
 
   sql += ' ORDER BY id DESC';
 
   db.query(sql, params, (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    }
+    res.json(results);
+  });
+});
+
+// ✅ สำหรับหน้า admin-sp: แสดงรายการที่อนุมัติแล้วและ processed แล้ว
+app.get('/data-approved', (req, res) => {
+  const department = req.query.department;
+
+  if (!department) {
+    return res.status(400).json({ error: 'กรุณาระบุแผนก' });
+  }
+
+  const sql = `
+    SELECT * FROM requests 
+    WHERE department = ? AND approved = 1 AND processed = true
+    ORDER BY id DESC
+  `;
+
+  db.query(sql, [department], (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     }

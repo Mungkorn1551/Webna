@@ -78,7 +78,8 @@
   <script>
     async function loadData() {
       // ✅ เพิ่ม processed=true เพื่อกรองเฉพาะรายการที่อนุมัติแล้ว
-      const res = await fetch('/data?department=สำนักงานปลัด&processed=true');
+      const res = await fetch('/data-approved?department=สำนักงานปลัด');
+
       const data = await res.json();
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
