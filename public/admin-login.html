@@ -35,7 +35,7 @@
       color: #cc0000;
     }
 
-    input[type="password"] {
+    input {
       width: 100%;
       padding: 10px;
       border: 1px solid #ccc;
@@ -73,10 +73,14 @@
     <form action="/admin-login" method="post">
       <h2>เข้าสู่ระบบผู้ดูแล</h2>
 
-      <div class="error-msg" id="error-msg">รหัสผ่านไม่ถูกต้อง</div>
+      <div class="error-msg" id="error-msg">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+
+      <label for="username">ชื่อผู้ใช้ *</label>
+      <input type="text" name="username" id="username" required />
 
       <label for="password">รหัสผ่าน *</label>
       <input type="password" name="password" id="password" required />
+
       <button type="submit">เข้าสู่ระบบ</button>
     </form>
   </div>
