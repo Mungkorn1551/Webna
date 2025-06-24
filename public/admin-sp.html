@@ -43,44 +43,6 @@
       max-height: 80px;
     }
 
-    .btn {
-      padding: 6px 14px;
-      font-size: 14px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin: 4px 0;
-      transition: 0.2s ease;
-      width: 100px;
-      font-family: 'Kanit', sans-serif;
-    }
-
-    .btn.approve {
-      background-color: #22c55e;
-      color: white;
-    }
-
-    .btn.approve:hover {
-      background-color: #16a34a;
-    }
-
-    .btn.reject {
-      background-color: #ef4444;
-      color: white;
-    }
-
-    .btn.reject:hover {
-      background-color: #dc2626;
-    }
-
-    select {
-      padding: 6px;
-      border-radius: 6px;
-      margin-top: 6px;
-      width: 100px;
-      font-family: 'Kanit', sans-serif;
-    }
-
     .status {
       font-weight: bold;
     }
@@ -107,9 +69,7 @@
         <th>อนุมัติ</th>
         <th>แผนก</th>
         <th>สถานะ</th>
-        <th>หมวดหมู่</th>
         <th>แผนที่</th>
-        <th>จัดการ</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -121,6 +81,7 @@
       const data = await res.json();
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
+
       data.forEach(row => {
         const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
         const mapLink = row.latitude && row.longitude
@@ -136,55 +97,10 @@
           <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>
-          <td>${row.category || "-"}</td>
           <td>${mapLink}</td>
-          <td>
-            <button class="btn approve" onclick="approve(${row.id})">✅ อนุมัติ</button><br>
-            <button class="btn reject" onclick="reject(${row.id})">❌ ไม่อนุมัติ</button><br>
-            <select onchange="setDept(${row.id}, this.value)">
-              <option value="">เลือกแผนก</option>
-              <option value="สำนักงานปลัด" ${row.department === 'สำนักงานปลัด' ? 'selected' : ''}>สำนักงานปลัด</option>
-              <option value="สาธารณสุข" ${row.department === 'สาธารณสุข' ? 'selected' : ''}>สาธารณสุข</option>
-              <option value="กองช่าง" ${row.department === 'กองช่าง' ? 'selected' : ''}>กองช่าง</option>
-              <option value="ไฟฟ้า" ${row.department === 'ไฟฟ้า' ? 'selected' : ''}>ไฟฟ้า</option>
-              <option value="อื่นๆ" ${row.department === 'อื่นๆ' ? 'selected' : ''}>อื่นๆ</option>
-            </select><br>
-            <select onchange="setStatus(${row.id}, this.value)">
-              <option ${row.status === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option>
-              <option ${row.status === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
-            </select>
-          </td>
         `;
         tbody.appendChild(tr);
       });
-    }
-
-    async function approve(id) {
-      await fetch(`/approve/${id}`, { method: 'POST' });
-      loadData();
-    }
-
-    async function reject(id) {
-      await fetch(`/reject/${id}`, { method: 'POST' });
-      loadData();
-    }
-
-    async function setDept(id, dept) {
-      await fetch(`/set-department/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ department: dept })
-      });
-      loadData();
-    }
-
-    async function setStatus(id, status) {
-      await fetch(`/set-status/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      loadData();
     }
 
     loadData();
