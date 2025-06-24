@@ -16,20 +16,41 @@
       margin-bottom: 10px;
     }
 
+    .tabs {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      display: inline-block;
+      margin: 4px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: #e2e8f0;
+      color: #111827;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .tab:hover {
+      background-color: #cbd5e1;
+    }
+
+    .tab.active {
+      background-color: #2563eb;
+      color: white;
+    }
+
     .back-btn {
       display: inline-block;
       margin-bottom: 20px;
-      background-color: #2563eb;
+      background-color: #16a34a;
       color: white;
       padding: 10px 16px;
       border-radius: 8px;
       text-decoration: none;
       font-weight: bold;
-      transition: background-color 0.2s ease;
-    }
-
-    .back-btn:hover {
-      background-color: #1e40af;
     }
 
     table {
@@ -85,9 +106,22 @@
 <body>
   <h2>✅ รายการคำร้องที่อนุมัติแล้ว</h2>
 
-  <!-- ✅ ปุ่มกลับ -->
-  <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
+  <!-- ปุ่มกลับไปหน้า admin -->
+  <div style="text-align: center;">
+    <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
+  </div>
 
+  <!-- Tabs เลือกแผนก -->
+  <div class="tabs">
+    <span class="tab active" onclick="loadData('ทั้งหมด', this)">✅ ทั้งหมด</span>
+    <span class="tab" onclick="loadData('สำนักงานปลัด', this)">📂 สำนักงานปลัด</span>
+    <span class="tab" onclick="loadData('สาธารณสุข', this)">🏥 สาธารณสุข</span>
+    <span class="tab" onclick="loadData('กองช่าง', this)">🛠️ กองช่าง</span>
+    <span class="tab" onclick="loadData('ไฟฟ้า', this)">💡 ไฟฟ้า</span>
+    <span class="tab" onclick="loadData('อื่นๆ', this)">📁 อื่นๆ</span>
+  </div>
+
+  <!-- ตารางข้อมูล -->
   <table id="data-table">
     <thead>
       <tr>
@@ -105,8 +139,17 @@
   </table>
 
   <script>
-    async function loadData() {
-      const res = await fetch('/data-processed');
+    async function loadData(department, clickedTab = null) {
+      // สลับปุ่ม active
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      if (clickedTab) clickedTab.classList.add('active');
+
+      let url = '/data-processed';
+      if (department && department !== 'ทั้งหมด') {
+        url += '?department=' + encodeURIComponent(department);
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
@@ -132,7 +175,8 @@
       });
     }
 
-    loadData();
+    // โหลดเริ่มต้น
+    loadData("ทั้งหมด");
   </script>
 </body>
 </html>
