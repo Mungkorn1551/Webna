@@ -3,6 +3,9 @@ const multer = require('multer');
 const mysql = require('mysql2');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const session = require('express-session');
+const bodyParser = require('body-parser');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -26,11 +29,16 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage });
 
 // ✅ Middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 app.use(express.static('public'));
+app.use(session({
+  secret: 'hi-form-secret',
+  resave: false,
+  saveUninitialized: false
+}));
 
-// ✅ เชื่อมต่อ MySQL (Railway)
+// ✅ เชื่อมต่อ MySQL
 const db = mysql.createConnection({
   host: 'shortline.proxy.rlwy.net',
   port: 32724,
@@ -47,7 +55,45 @@ db.connect((err) => {
   }
 });
 
-// ✅ รับข้อมูลจากฟอร์มและบันทึก URL รูปจาก Cloudinary
+// ✅ ------------------- ADMIN LOGIN SYSTEM -------------------
+
+// รหัสผ่านผู้ดูแล (เปลี่ยนได้)
+const ADMIN_PASSWORD = '123456';
+
+// หน้า login
+app.get('/admin-login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+// ตรวจสอบรหัสผ่าน
+app.post('/admin-login', (req, res) => {
+  const { password } = req.body;
+  if (password === ADMIN_PASSWORD) {
+    req.session.loggedIn = true;
+    res.redirect('/admin');
+  } else {
+    res.send('<script>alert("รหัสผ่านผิด"); window.location.href="/admin-login";</script>');
+  }
+});
+
+// ออกจากระบบ
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/admin-login');
+  });
+});
+
+// ป้องกันหน้า /admin ถ้าไม่ล็อกอิน
+app.get('/admin', (req, res) => {
+  if (req.session.loggedIn) {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  } else {
+    res.redirect('/admin-login');
+  }
+});
+
+// ✅ ------------------- ระบบคำร้อง -------------------
+
 app.post('/submit', upload.single('photo'), (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
   const photo = req.file ? req.file.path : null;
@@ -57,7 +103,6 @@ app.post('/submit', upload.single('photo'), (req, res) => {
     (name, phone, address, category, message, latitude, longitude, photo)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-
   const values = [name, phone, address, category, message, latitude, longitude, photo];
 
   db.query(sql, values, (err, result) => {
@@ -75,7 +120,6 @@ app.post('/submit', upload.single('photo'), (req, res) => {
   });
 });
 
-// ✅ ดึงข้อมูลทั้งหมด หรือเฉพาะแผนก (เฉพาะที่ approved = 1)
 app.get('/data', (req, res) => {
   const department = req.query.department;
 
@@ -97,8 +141,6 @@ app.get('/data', (req, res) => {
   });
 });
 
-
-// ✅ อนุมัติคำร้อง
 app.post('/approve/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 1 WHERE id = ?', [id], (err) => {
@@ -107,7 +149,6 @@ app.post('/approve/:id', (req, res) => {
   });
 });
 
-// ✅ ปฏิเสธคำร้อง
 app.post('/reject/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 0 WHERE id = ?', [id], (err) => {
@@ -116,7 +157,6 @@ app.post('/reject/:id', (req, res) => {
   });
 });
 
-// ✅ เปลี่ยนแผนก
 app.post('/set-department/:id', (req, res) => {
   const id = req.params.id;
   const { department } = req.body;
@@ -126,7 +166,6 @@ app.post('/set-department/:id', (req, res) => {
   });
 });
 
-// ✅ เปลี่ยนสถานะ
 app.post('/set-status/:id', (req, res) => {
   const id = req.params.id;
   const { status } = req.body;
@@ -136,7 +175,6 @@ app.post('/set-status/:id', (req, res) => {
   });
 });
 
-// ✅ ยกเลิกอนุมัติ
 app.post('/disapprove/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 0 WHERE id = ?', [id], (err) => {
