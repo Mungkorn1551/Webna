@@ -110,15 +110,6 @@ app.post('/reject/:id', (req, res) => {
 });
 
 // ✅ ตั้งแผนกที่รับผิดชอบ
-app.post('/set-department/:id', (req, res) => {
-  const id = req.params.id;
-  const { department } = req.body;
-  db.query('UPDATE requests SET department = ? WHERE id = ?', [department, id], (err) => {
-    if (err) return res.status(500).send('❌ ตั้งแผนกไม่สำเร็จ');
-    res.send('✅ ตั้งแผนกสำเร็จ');
-  });
-});
-
 // ✅ เปลี่ยนสถานะ (status: pending, รอดำเนินการ, แจ้งหัวหน้า, จบ)
 app.post('/set-status/:id', (req, res) => {
   const id = req.params.id;
@@ -128,3 +119,15 @@ app.post('/set-status/:id', (req, res) => {
     res.send('✅ เปลี่ยนสถานะแล้ว');
   });
 });
+
+
+// ✅ เปลี่ยนสถานะ (status: pending, รอดำเนินการ, แจ้งหัวหน้า, จบ)
+// ✅ อัปเดต approved เป็น 0 (ไม่อนุมัติ)
+app.post('/disapprove/:id', (req, res) => {
+  const id = req.params.id;
+  db.query('UPDATE requests SET approved = 0 WHERE id = ?', [id], (err) => {
+    if (err) return res.status(500).send('เกิดข้อผิดพลาด');
+    res.sendStatus(200);
+  });
+});
+
