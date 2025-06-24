@@ -57,7 +57,6 @@ db.connect((err) => {
 
 // ✅ ------------------- ADMIN LOGIN SYSTEM -------------------
 
-// รหัสผ่านผู้ดูแล (เปลี่ยนได้)
 const ADMIN_PASSWORD = '123456';
 
 // หน้า login
@@ -72,7 +71,7 @@ app.post('/admin-login', (req, res) => {
     req.session.loggedIn = true;
     res.redirect('/admin');
   } else {
-    res.send('<script>alert("รหัสผ่านผิด"); window.location.href="/admin-login";</script>');
+    res.redirect('/admin-login?error=1');
   }
 });
 

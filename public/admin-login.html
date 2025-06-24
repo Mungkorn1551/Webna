@@ -49,6 +49,7 @@
       margin-bottom: 10px;
       font-size: 14px;
       text-align: center;
+      display: none;
     }
 
     button {
@@ -72,15 +73,19 @@
     <form action="/admin-login" method="post">
       <h2>เข้าสู่ระบบผู้ดูแล</h2>
 
-      <!-- ถ้ามี error ให้แสดง -->
-      <% if (typeof error !== 'undefined') { %>
-        <div class="error-msg"><%= error %></div>
-      <% } %>
+      <div class="error-msg" id="error-msg">รหัสผ่านไม่ถูกต้อง</div>
 
       <label for="password">รหัสผ่าน *</label>
       <input type="password" name="password" id="password" required />
       <button type="submit">เข้าสู่ระบบ</button>
     </form>
   </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === '1') {
+      document.getElementById('error-msg').style.display = 'block';
+    }
+  </script>
 </body>
 </html>
