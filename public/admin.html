@@ -120,6 +120,7 @@
       const data = await res.json();
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
+
       data.forEach(row => {
         const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
         const mapLink = row.latitude && row.longitude
@@ -137,9 +138,9 @@
           <td class="status ${row.status}">${statusText}</td>
           <td>${mapLink}</td>
           <td>
-            <button class="btn approve" onclick="approve(${row.id})">✅ อนุมัติ</button><br>
-            <button class="btn reject" onclick="reject(${row.id})">❌ ไม่อนุมัติ</button><br>
-            <select onchange="setDept(${row.id}, this.value)">
+            <button class="btn approve" id="approve-${row.id}" onclick="approve(${row.id})" disabled>✅ อนุมัติ</button><br>
+            <button class="btn reject" id="reject-${row.id}" onclick="reject(${row.id})" disabled>❌ ไม่อนุมัติ</button><br>
+            <select onchange="setDept(${row.id}, this.value); toggleApproveButtons(${row.id}, this.value)">
               <option value="">เลือกแผนก</option>
               <option value="สำนักงานปลัด" ${row.department === 'สำนักงานปลัด' ? 'selected' : ''}>สำนักงานปลัด</option>
               <option value="สาธารณสุข" ${row.department === 'สาธารณสุข' ? 'selected' : ''}>สาธารณสุข</option>
@@ -154,7 +155,21 @@
           </td>
         `;
         tbody.appendChild(tr);
+
+        // เปิดปุ่มถ้ามีแผนกแล้ว
+        if (row.department) {
+          toggleApproveButtons(row.id, row.department);
+        }
       });
+    }
+
+    function toggleApproveButtons(id, department) {
+      const approveBtn = document.getElementById(`approve-${id}`);
+      const rejectBtn = document.getElementById(`reject-${id}`);
+      const enabled = department && department !== '';
+
+      approveBtn.disabled = !enabled;
+      rejectBtn.disabled = !enabled;
     }
 
     async function approve(id) {
@@ -173,7 +188,6 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ department: dept })
       });
-      loadData();
     }
 
     async function setStatus(id, status) {
