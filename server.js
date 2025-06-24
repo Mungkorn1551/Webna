@@ -75,7 +75,7 @@ app.post('/submit', upload.single('photo'), (req, res) => {
   });
 });
 
-// ✅ ดึงข้อมูลทั้งหมด หรือเฉพาะแผนก (ถ้ามี ?department=...)
+// ✅ ดึงข้อมูลทั้งหมด หรือเฉพาะแผนก (เฉพาะที่ approved = 1)
 app.get('/data', (req, res) => {
   const department = req.query.department;
 
@@ -83,7 +83,7 @@ app.get('/data', (req, res) => {
   const params = [];
 
   if (department) {
-    sql += ' WHERE department = ?';
+    sql += ' WHERE department = ? AND approved = 1';
     params.push(department);
   }
 
@@ -96,6 +96,7 @@ app.get('/data', (req, res) => {
     res.json(results);
   });
 });
+
 
 // ✅ อนุมัติคำร้อง
 app.post('/approve/:id', (req, res) => {
