@@ -1,65 +1,104 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>รายการที่ดำเนินการแล้ว</title>
+  <meta charset="UTF-8" />
+  <title>✅ คำร้องที่อนุมัติแล้ว</title>
   <style>
     body {
       font-family: 'Kanit', sans-serif;
-      background-color: #f0f4f8;
-      padding: 2rem;
+      background: #f9f9f9;
+      padding: 30px;
     }
 
     h2 {
       text-align: center;
-      color: #1d4ed8;
+      color: #15563b;
+      margin-bottom: 10px;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 20px;
+      background-color: #2563eb;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background-color 0.2s ease;
+    }
+
+    .back-btn:hover {
+      background-color: #1e40af;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background: #fff;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
     }
 
     th, td {
-      padding: 12px;
-      border-bottom: 1px solid #e2e8f0;
+      padding: 12px 10px;
       text-align: center;
+      border-bottom: 1px solid #ddd;
     }
 
     th {
-      background: #1d4ed8;
+      background-color: #15563b;
       color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
 
     img {
-      max-width: 80px;
-      max-height: 60px;
       border-radius: 6px;
+      max-width: 100px;
+      max-height: 80px;
     }
 
-    a {
+    .status {
+      font-weight: bold;
+    }
+
+    .status.รอตรวจสอบ,
+    .status.pending {
+      color: #f97316;
+    }
+
+    .status.เสร็จสิ้น {
+      color: #16a34a;
+    }
+
+    a.map-link {
       color: #2563eb;
       text-decoration: none;
-      font-weight: bold;
+    }
+
+    a.map-link:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <h2>✅ รายการคำร้องที่ดำเนินการแล้ว</h2>
+  <h2>✅ รายการคำร้องที่อนุมัติแล้ว</h2>
+
+  <!-- ✅ ปุ่มกลับ -->
+  <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
+
   <table id="data-table">
     <thead>
       <tr>
         <th>ชื่อ</th>
+        <th>เบอร์</th>
         <th>ข้อความ</th>
         <th>รูป</th>
+        <th>อนุมัติ</th>
         <th>แผนก</th>
         <th>สถานะ</th>
         <th>แผนที่</th>
-        <th>ผลการตรวจสอบ</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -73,20 +112,21 @@
       tbody.innerHTML = "";
 
       data.forEach(row => {
+        const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
         const mapLink = row.latitude && row.longitude
-          ? `<a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
+          ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
           : "-";
-        const approved = row.approved === 1 ? "✅ อนุมัติ" : "❌ ไม่อนุมัติ";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row.name}</td>
+          <td>${row.phone}</td>
           <td>${row.message}</td>
-          <td>${row.photo ? `<img src="${row.photo}" />` : "-"}</td>
+          <td><img src="${row.photo}" alt="รูปภาพ"></td>
+          <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
-          <td>${row.status || "-"}</td>
+          <td class="status ${row.status}">${statusText}</td>
           <td>${mapLink}</td>
-          <td>${approved}</td>
         `;
         tbody.appendChild(tr);
       });
