@@ -59,12 +59,10 @@ db.connect((err) => {
 
 const ADMIN_PASSWORD = '123456';
 
-// หน้า login
 app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
 
-// ตรวจสอบรหัสผ่าน
 app.post('/admin-login', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
@@ -75,14 +73,12 @@ app.post('/admin-login', (req, res) => {
   }
 });
 
-// ออกจากระบบ
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/admin-login');
   });
 });
 
-// ป้องกันหน้า /admin ถ้าไม่ล็อกอิน
 app.get('/admin', (req, res) => {
   if (req.session.loggedIn) {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
@@ -122,11 +118,11 @@ app.post('/submit', upload.single('photo'), (req, res) => {
 app.get('/data', (req, res) => {
   const department = req.query.department;
 
-  let sql = 'SELECT * FROM requests';
+  let sql = 'SELECT * FROM requests WHERE processed = false';
   const params = [];
 
   if (department) {
-    sql += ' WHERE department = ? AND approved = 1';
+    sql += ' AND department = ? AND approved = 1';
     params.push(department);
   }
 
@@ -140,9 +136,26 @@ app.get('/data', (req, res) => {
   });
 });
 
+app.get('/processed', (req, res) => {
+  if (req.session.loggedIn) {
+    res.sendFile(path.join(__dirname, 'public', 'processed.html'));
+  } else {
+    res.redirect('/admin-login');
+  }
+});
+
+app.get('/data-processed', (req, res) => {
+  db.query('SELECT * FROM requests WHERE processed = true ORDER BY id DESC', (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    }
+    res.json(results);
+  });
+});
+
 app.post('/approve/:id', (req, res) => {
   const id = req.params.id;
-  db.query('UPDATE requests SET approved = 1 WHERE id = ?', [id], (err) => {
+  db.query('UPDATE requests SET approved = 1, processed = true WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).send('❌ อนุมัติไม่สำเร็จ');
     res.send('✅ อนุมัติสำเร็จ');
   });
@@ -150,7 +163,7 @@ app.post('/approve/:id', (req, res) => {
 
 app.post('/reject/:id', (req, res) => {
   const id = req.params.id;
-  db.query('UPDATE requests SET approved = 0 WHERE id = ?', [id], (err) => {
+  db.query('UPDATE requests SET approved = 0, processed = true WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).send('❌ ปฏิเสธไม่สำเร็จ');
     res.send('✅ ปฏิเสธคำร้องแล้ว');
   });
@@ -176,13 +189,12 @@ app.post('/set-status/:id', (req, res) => {
 
 app.post('/disapprove/:id', (req, res) => {
   const id = req.params.id;
-  db.query('UPDATE requests SET approved = 0 WHERE id = ?', [id], (err) => {
+  db.query('UPDATE requests SET approved = 0, processed = true WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).send('เกิดข้อผิดพลาด');
     res.sendStatus(200);
   });
 });
 
-// ✅ เริ่มต้นเซิร์ฟเวอร์
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
 });
