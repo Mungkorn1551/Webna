@@ -11,10 +11,46 @@
       padding: 20px;
     }
 
-    h2 {
-      text-align: center;
-      color: #15563b;
+    /* ✅ Navbar */
+    .navbar {
+      background-color: #15563b;
+      padding: 10px 20px;
+      color: white;
+      border-radius: 10px;
       margin-bottom: 20px;
+    }
+
+    .navbar-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: background-color 0.2s ease;
+    }
+
+    .nav-link:hover {
+      background-color: #1e6e50;
+    }
+
+    .nav-link.active {
+      background-color: #1e6e50;
+    }
+
+    h2 {
+      margin: 0;
     }
 
     .table-wrapper {
@@ -111,23 +147,6 @@
       font-weight: bold;
     }
 
-    /* ✅ เพิ่มสไตล์ลิงก์อนุมัติแล้ว */
-    .bottom-link {
-      text-align: center;
-      margin-top: 30px;
-    }
-
-    .bottom-link a {
-      color: #15563b;
-      font-weight: bold;
-      font-size: 18px;
-      text-decoration: none;
-    }
-
-    .bottom-link a:hover {
-      text-decoration: underline;
-    }
-
     @media (max-width: 768px) {
       table {
         min-width: 800px;
@@ -150,7 +169,18 @@
   </style>
 </head>
 <body>
-  <h2>📋 รายการคำร้องทั้งหมด</h2>
+
+  <!-- ✅ Navbar -->
+  <nav class="navbar">
+    <div class="navbar-container">
+      <h2>📋 ระบบจัดการคำร้อง</h2>
+      <div class="nav-links">
+        <a href="/admin" class="nav-link active">คำร้องใหม่</a>
+        <a href="/processed" class="nav-link">✅ อนุมัติแล้ว</a>
+      </div>
+    </div>
+  </nav>
+
   <div class="table-wrapper">
     <table id="data-table">
       <thead>
@@ -168,11 +198,6 @@
       </thead>
       <tbody></tbody>
     </table>
-  </div>
-
-  <!-- ✅ ลิงก์ "อนุมัติแล้ว" ด้านล่าง -->
-  <div class="bottom-link">
-    <a href="/processed">✅ อนุมัติแล้ว</a>
   </div>
 
   <script>
