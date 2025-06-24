@@ -7,7 +7,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ✅ ตั้งค่า Cloudinary (ใส่ข้อมูลของคุณ)
+// ✅ ตั้งค่า Cloudinary
 cloudinary.config({
   cloud_name: 'dmaijyfud',
   api_key: '962872364982724',
@@ -18,18 +18,19 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'obtc-uploads', // ชื่อโฟลเดอร์ใน Cloudinary
+    folder: 'obtc-uploads',
     allowed_formats: ['jpg', 'jpeg', 'png'],
-    public_id: (req, file) => Date.now() // ตั้งชื่อไฟล์ตาม timestamp
+    public_id: () => Date.now()
   }
 });
 const upload = multer({ storage });
 
 // ✅ Middleware
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static('public'));
 
-// ✅ เชื่อมต่อฐานข้อมูล MySQL (Railway)
+// ✅ เชื่อมต่อ MySQL (Railway)
 const db = mysql.createConnection({
   host: 'shortline.proxy.rlwy.net',
   port: 32724,
@@ -49,7 +50,7 @@ db.connect((err) => {
 // ✅ รับข้อมูลจากฟอร์มและบันทึก URL รูปจาก Cloudinary
 app.post('/submit', upload.single('photo'), (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
-  const photo = req.file ? req.file.path : null; // Cloudinary URL
+  const photo = req.file ? req.file.path : null;
 
   const sql = `
     INSERT INTO requests 
@@ -74,9 +75,21 @@ app.post('/submit', upload.single('photo'), (req, res) => {
   });
 });
 
-// ✅ ดึงข้อมูลทั้งหมดแบบ JSON
+// ✅ ดึงข้อมูลทั้งหมด หรือเฉพาะแผนก (ถ้ามี ?department=...)
 app.get('/data', (req, res) => {
-  db.query('SELECT * FROM requests ORDER BY id DESC', (err, results) => {
+  const department = req.query.department;
+
+  let sql = 'SELECT * FROM requests';
+  const params = [];
+
+  if (department) {
+    sql += ' WHERE department = ?';
+    params.push(department);
+  }
+
+  sql += ' ORDER BY id DESC';
+
+  db.query(sql, params, (err, results) => {
     if (err) {
       return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     }
@@ -84,14 +97,7 @@ app.get('/data', (req, res) => {
   });
 });
 
-// ✅ Start server
-app.listen(port, () => {
-  console.log(`🚀 Server running at http://localhost:${port}`);
-});
-// ✅ ต้องใช้สำหรับอ่าน JSON body จากคำขอของ admin
-app.use(express.json());
-
-// ✅ อนุมัติคำร้อง (approved = true)
+// ✅ อนุมัติคำร้อง
 app.post('/approve/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 1 WHERE id = ?', [id], (err) => {
@@ -100,7 +106,7 @@ app.post('/approve/:id', (req, res) => {
   });
 });
 
-// ✅ ปฏิเสธคำร้อง (approved = false)
+// ✅ ปฏิเสธคำร้อง
 app.post('/reject/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 0 WHERE id = ?', [id], (err) => {
@@ -109,8 +115,17 @@ app.post('/reject/:id', (req, res) => {
   });
 });
 
-// ✅ ตั้งแผนกที่รับผิดชอบ
-// ✅ เปลี่ยนสถานะ (status: pending, รอดำเนินการ, แจ้งหัวหน้า, จบ)
+// ✅ เปลี่ยนแผนก
+app.post('/set-department/:id', (req, res) => {
+  const id = req.params.id;
+  const { department } = req.body;
+  db.query('UPDATE requests SET department = ? WHERE id = ?', [department, id], (err) => {
+    if (err) return res.status(500).send('❌ เปลี่ยนแผนกไม่สำเร็จ');
+    res.send('✅ เปลี่ยนแผนกแล้ว');
+  });
+});
+
+// ✅ เปลี่ยนสถานะ
 app.post('/set-status/:id', (req, res) => {
   const id = req.params.id;
   const { status } = req.body;
@@ -120,9 +135,7 @@ app.post('/set-status/:id', (req, res) => {
   });
 });
 
-
-// ✅ เปลี่ยนสถานะ (status: pending, รอดำเนินการ, แจ้งหัวหน้า, จบ)
-// ✅ อัปเดต approved เป็น 0 (ไม่อนุมัติ)
+// ✅ ยกเลิกอนุมัติ
 app.post('/disapprove/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 0 WHERE id = ?', [id], (err) => {
@@ -131,3 +144,7 @@ app.post('/disapprove/:id', (req, res) => {
   });
 });
 
+// ✅ เริ่มต้นเซิร์ฟเวอร์
+app.listen(port, () => {
+  console.log(`🚀 Server running at http://localhost:${port}`);
+});
