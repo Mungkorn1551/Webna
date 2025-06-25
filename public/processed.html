@@ -151,6 +151,7 @@
     <tbody></tbody>
   </table>
 
+    <!-- ... (เหมือนเดิมทั้งหมดจนถึงส่วน script) -->
   <script>
     async function loadData(department, clickedTab = null) {
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -172,12 +173,24 @@
           ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
           : "-";
 
+        // ✅ รองรับหลายไฟล์ (รูป/วิดีโอ)
+        const mediaHtml = (row.photo || '').split(',').map(url => {
+          const trimmed = url.trim();
+          if (trimmed.endsWith('.mp4') || trimmed.includes('/video/')) {
+            return `<video src="${trimmed}" controls width="100" style="margin-bottom: 5px;"></video>`;
+          } else if (trimmed) {
+            return `<img src="${trimmed}" alt="รูป" width="100" style="margin-bottom: 5px;">`;
+          } else {
+            return '-';
+          }
+        }).join('<br>');
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row.name}</td>
           <td>${row.phone}</td>
           <td>${row.message}</td>
-          <td><img src="${row.photo}" alt="รูปภาพ"></td>
+          <td>${mediaHtml}</td>
           <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>
@@ -190,5 +203,5 @@
     // โหลดเริ่มต้น
     loadData("ทั้งหมด");
   </script>
-</body>
-</html>
+
+  </html>
