@@ -89,44 +89,31 @@ app.get('/admin', (req, res) => {
 
 // ✅ ------------------- ระบบคำร้อง -------------------
 
-app.post('/submit', upload.array('photos', 5), async (req, res) => {
+app.post('/submit', upload.single('photo'), (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
+  const photo = req.file ? req.file.path : null;
 
-  let photoUrls = [];
+  const sql = `
+    INSERT INTO requests 
+    (name, phone, address, category, message, latitude, longitude, photo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  const values = [name, phone, address, category, message, latitude, longitude, photo];
 
-  try {
-    for (const file of req.files) {
-      photoUrls.push(file.path); // URL จาก Cloudinary
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
+      return res.status(500).send('❌ บันทึกไม่สำเร็จ');
     }
 
-    const photoUrlsString = JSON.stringify(photoUrls); // แปลงเป็น string เพื่อเก็บใน MySQL
-
-    const sql = `
-      INSERT INTO requests 
-      (name, phone, address, category, message, latitude, longitude, photo)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [name, phone, address, category, message, latitude, longitude, photoUrlsString];
-
-    db.query(sql, values, (err, result) => {
-      if (err) {
-        console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
-        return res.status(500).send('❌ บันทึกไม่สำเร็จ');
-      }
-
-      console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
-      res.send(`
-        <h2>✅ ส่งคำร้องสำเร็จ</h2>
-        <p>ขอบคุณ ${name}</p>
-        <p><a href="/">🔙 กลับหน้าหลัก</a></p>
-      `);
-    });
-  } catch (error) {
-    console.error('❌ อัปโหลดรูปภาพล้มเหลว:', error);
-    res.status(500).send('❌ เกิดข้อผิดพลาดในการอัปโหลด');
-  }
+    console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
+    res.send(`
+      <h2>✅ ส่งคำร้องสำเร็จ</h2>
+      <p>ขอบคุณ ${name}</p>
+      <p><a href="/">🔙 กลับหน้าหลัก</a></p>
+    `);
+  });
 });
-
 
 // ✅ สำหรับ admin.html: ดึงคำร้องที่ยังไม่ processed
 app.get('/data', (req, res) => {
