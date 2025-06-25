@@ -19,9 +19,12 @@
       margin-bottom: 20px;
     }
 
-    .back-btn {
-      display: inline-block;
+    .top-bar {
+      text-align: left;
       margin-bottom: 30px;
+    }
+
+    .back-btn {
       background-color: #22c55e;
       color: white;
       padding: 10px 20px;
@@ -117,11 +120,11 @@
   </style>
 </head>
 <body>
-  <h2>✅ รายการคำร้องที่อนุมัติแล้ว</h2>
-
-  <div style="text-align: center;">
+  <div class="top-bar">
     <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
   </div>
+
+  <h2>✅ รายการคำร้องที่อนุมัติแล้ว</h2>
 
   <div class="tabs">
     <span class="tab active" onclick="loadData('ทั้งหมด', this)">✅ ทั้งหมด</span>
@@ -150,7 +153,6 @@
 
   <script>
     async function loadData(department, clickedTab = null) {
-      // สลับปุ่ม active
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       if (clickedTab) clickedTab.classList.add('active');
 
