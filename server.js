@@ -3,7 +3,6 @@ const multer = require('multer');
 const mysql = require('mysql2');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
 
@@ -22,23 +21,19 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'obtc-uploads',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
+    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'], // รองรับทั้งรูปภาพและวิดีโอ
     public_id: () => Date.now()
   }
 });
+
 const upload = multer({ storage });
 
-// ✅ Middleware
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
-app.use(session({
-  secret: 'hi-form-secret',
-  resave: false,
-  saveUninitialized: false
-}));
 
-// ✅ เชื่อมต่อ MySQL
+// เชื่อมต่อ MySQL
 const db = mysql.createConnection({
   host: 'shortline.proxy.rlwy.net',
   port: 32724,
@@ -95,35 +90,40 @@ app.post('/submit', upload.array('mediaFiles', 10), async (req, res) => {
 
   const uploadedUrls = [];
 
-  for (const file of files) {
-    const result = await cloudinary.uploader.upload(file.path, {
-      resource_type: "auto" // รองรับทั้งรูปภาพและวิดีโอ
-    });
-    uploadedUrls.push(result.secure_url);
-  }
-
-  const photoUrls = uploadedUrls.join(','); // เก็บ URL หลายอันด้วยคอมม่า
-
-  const sql = `
-    INSERT INTO requests 
-    (name, phone, address, category, message, latitude, longitude, photo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-  const values = [name, phone, address, category, message, latitude, longitude, photoUrls];
-
-  db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
-      return res.status(500).send('❌ บันทึกไม่สำเร็จ');
+  try {
+    for (const file of files) {
+      const result = await cloudinary.uploader.upload(file.path, {
+        resource_type: "auto" // รองรับทั้งรูปภาพและวิดีโอ
+      });
+      uploadedUrls.push(result.secure_url);
     }
 
-    console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
-    res.send(`
-      <h2>✅ ส่งคำร้องสำเร็จ</h2>
-      <p>ขอบคุณ ${name}</p>
-      <p><a href="/">🔙 กลับหน้าหลัก</a></p>
-    `);
-  });
+    const photoUrls = uploadedUrls.join(','); // เก็บ URL หลายอันด้วยคอมม่า
+
+    const sql = `
+      INSERT INTO requests 
+      (name, phone, address, category, message, latitude, longitude, photo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    const values = [name, phone, address, category, message, latitude, longitude, photoUrls];
+
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
+        return res.status(500).send('❌ บันทึกไม่สำเร็จ');
+      }
+
+      console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
+      res.send(`
+        <h2>✅ ส่งคำร้องสำเร็จ</h2>
+        <p>ขอบคุณ ${name}</p>
+        <p><a href="/">🔙 กลับหน้าหลัก</a></p>
+      `);
+    });
+  } catch (error) {
+    console.error('❌ Error uploading files:', error);
+    res.status(500).send('❌ อัปโหลดไฟล์ล้มเหลว');
+  }
 });
 
 // ✅ สำหรับ admin.html: ดึงคำร้องที่ยังไม่ processed
