@@ -10,6 +10,7 @@
       font-family: 'Kanit', sans-serif;
       background: linear-gradient(to bottom right, #f0fdf4, #e0f2fe);
       padding: 40px;
+      position: relative;
     }
 
     h2 {
@@ -19,12 +20,10 @@
       margin-bottom: 20px;
     }
 
-    .top-bar {
-      text-align: left;
-      margin-bottom: 30px;
-    }
-
     .back-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
       background-color: #22c55e;
       color: white;
       padding: 10px 20px;
@@ -40,6 +39,7 @@
 
     .tabs {
       text-align: center;
+      margin-top: 60px;
       margin-bottom: 25px;
     }
 
@@ -53,6 +53,7 @@
       font-weight: bold;
       cursor: pointer;
       transition: all 0.2s ease;
+      text-decoration: none;
     }
 
     .tab:hover {
@@ -120,15 +121,14 @@
   </style>
 </head>
 <body>
-  <div class="top-bar">
-    <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
-  </div>
+
+  <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
 
   <h2>✅ รายการคำร้องที่อนุมัติแล้ว</h2>
 
   <div class="tabs">
     <span class="tab active" onclick="loadData('ทั้งหมด', this)">✅ ทั้งหมด</span>
-    <span class="tab" onclick="loadData('สำนักงานปลัด', this)">📂 สำนักงานปลัด</span>
+    <a href="/admin-sp" class="tab">📂 สำนักงานปลัด</a>
     <span class="tab" onclick="loadData('สาธารณสุข', this)">🏥 สาธารณสุข</span>
     <span class="tab" onclick="loadData('กองช่าง', this)">🛠️ กองช่าง</span>
     <span class="tab" onclick="loadData('ไฟฟ้า', this)">💡 ไฟฟ้า</span>
@@ -187,8 +187,8 @@
       });
     }
 
-    // โหลดเริ่มต้น
     loadData("ทั้งหมด");
   </script>
+
 </body>
 </html>
