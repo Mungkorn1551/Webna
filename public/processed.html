@@ -10,7 +10,6 @@
       font-family: 'Kanit', sans-serif;
       background: linear-gradient(to bottom right, #f0fdf4, #e0f2fe);
       padding: 40px;
-      position: relative;
     }
 
     h2 {
@@ -21,9 +20,8 @@
     }
 
     .back-btn {
-      position: absolute;
-      top: 20px;
-      left: 20px;
+      display: inline-block;
+      margin-bottom: 30px;
       background-color: #22c55e;
       color: white;
       padding: 10px 20px;
@@ -39,7 +37,6 @@
 
     .tabs {
       text-align: center;
-      margin-top: 60px;
       margin-bottom: 25px;
     }
 
@@ -53,7 +50,6 @@
       font-weight: bold;
       cursor: pointer;
       transition: all 0.2s ease;
-      text-decoration: none;
     }
 
     .tab:hover {
@@ -121,14 +117,15 @@
   </style>
 </head>
 <body>
-
-  <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
-
   <h2>✅ รายการคำร้องที่อนุมัติแล้ว</h2>
+
+  <div style="text-align: center;">
+    <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
+  </div>
 
   <div class="tabs">
     <span class="tab active" onclick="loadData('ทั้งหมด', this)">✅ ทั้งหมด</span>
-    <a href="/admin-sp" class="tab">📂 สำนักงานปลัด</a>
+    <span class="tab" onclick="loadData('สำนักงานปลัด', this)">📂 สำนักงานปลัด</span>
     <span class="tab" onclick="loadData('สาธารณสุข', this)">🏥 สาธารณสุข</span>
     <span class="tab" onclick="loadData('กองช่าง', this)">🛠️ กองช่าง</span>
     <span class="tab" onclick="loadData('ไฟฟ้า', this)">💡 ไฟฟ้า</span>
@@ -153,6 +150,7 @@
 
   <script>
     async function loadData(department, clickedTab = null) {
+      // สลับปุ่ม active
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       if (clickedTab) clickedTab.classList.add('active');
 
@@ -187,8 +185,8 @@
       });
     }
 
+    // โหลดเริ่มต้น
     loadData("ทั้งหมด");
   </script>
-
 </body>
 </html>
