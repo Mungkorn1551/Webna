@@ -3,6 +3,7 @@ const multer = require('multer');
 const mysql = require('mysql2');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
 
@@ -11,9 +12,9 @@ const port = process.env.PORT || 3000;
 
 // ✅ ตั้งค่า Cloudinary
 cloudinary.config({
-  cloud_name: 'dmaijyfud', // เปลี่ยนเป็น Cloud Name ของคุณ
-  api_key: '962872364982724', // เปลี่ยนเป็น API Key ของคุณ
-  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g' // เปลี่ยนเป็น API Secret ของคุณ
+  cloud_name: 'dmaijyfud',
+  api_key: '962872364982724',
+  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g'
 });
 
 // ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
@@ -21,19 +22,23 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'obtc-uploads',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'], // รองรับทั้งรูปภาพและวิดีโอ
-    public_id: () => Date.now() // สร้าง public_id โดยใช้เวลาปัจจุบัน
+    allowed_formats: ['jpg', 'jpeg', 'png'],
+    public_id: () => Date.now()
   }
 });
+const upload = multer({ storage });
 
-const upload = multer({ storage }); // ใช้ Cloudinary Storage
-
-// Middleware
+// ✅ Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
+app.use(session({
+  secret: 'hi-form-secret',
+  resave: false,
+  saveUninitialized: false
+}));
 
-// เชื่อมต่อกับ MySQL
+// ✅ เชื่อมต่อ MySQL
 const db = mysql.createConnection({
   host: 'shortline.proxy.rlwy.net',
   port: 32724,
@@ -84,47 +89,30 @@ app.get('/admin', (req, res) => {
 
 // ✅ ------------------- ระบบคำร้อง -------------------
 
-app.post('/submit', upload.array('mediaFiles', 10), async (req, res) => {
+app.post('/submit', upload.single('photo'), (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
-  const files = req.files;
+  const photo = req.file ? req.file.path : null;
 
-  const uploadedUrls = [];
+  const sql = `
+    INSERT INTO requests 
+    (name, phone, address, category, message, latitude, longitude, photo)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+  const values = [name, phone, address, category, message, latitude, longitude, photo];
 
-  try {
-    // Loop เพื่ออัปโหลดไฟล์ทั้งหมดไปยัง Cloudinary
-    for (const file of files) {
-      const result = await cloudinary.uploader.upload(file.path, {
-        resource_type: 'auto'  // รองรับทั้งรูปภาพและวิดีโอ
-      });
-      uploadedUrls.push(result.secure_url);
+  db.query(sql, values, (err, result) => {
+    if (err) {
+      console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
+      return res.status(500).send('❌ บันทึกไม่สำเร็จ');
     }
 
-    const photoUrls = uploadedUrls.join(','); // เก็บ URL หลายอันด้วยคอมม่า
-
-    const sql = `
-      INSERT INTO requests 
-      (name, phone, address, category, message, latitude, longitude, photo)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-    const values = [name, phone, address, category, message, latitude, longitude, photoUrls];
-
-    db.query(sql, values, (err, result) => {
-      if (err) {
-        console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
-        return res.status(500).send('❌ บันทึกไม่สำเร็จ');
-      }
-
-      console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
-      res.send(`
-        <h2>✅ ส่งคำร้องสำเร็จ</h2>
-        <p>ขอบคุณ ${name}</p>
-        <p><a href="/">🔙 กลับหน้าหลัก</a></p>
-      `);
-    });
-  } catch (error) {
-    console.error('❌ Error uploading files:', error);
-    res.status(500).send('❌ อัปโหลดไฟล์ล้มเหลว');
-  }
+    console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
+    res.send(`
+      <h2>✅ ส่งคำร้องสำเร็จ</h2>
+      <p>ขอบคุณ ${name}</p>
+      <p><a href="/">🔙 กลับหน้าหลัก</a></p>
+    `);
+  });
 });
 
 // ✅ สำหรับ admin.html: ดึงคำร้องที่ยังไม่ processed
