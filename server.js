@@ -11,9 +11,9 @@ const port = process.env.PORT || 3000;
 
 // ✅ ตั้งค่า Cloudinary
 cloudinary.config({
-  cloud_name: 'dmaijyfud',
-  api_key: '962872364982724',
-  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g'
+  cloud_name: 'dmaijyfud', // เปลี่ยนเป็น Cloud Name ของคุณ
+  api_key: '962872364982724', // เปลี่ยนเป็น API Key ของคุณ
+  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g' // เปลี่ยนเป็น API Secret ของคุณ
 });
 
 // ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
@@ -22,18 +22,18 @@ const storage = new CloudinaryStorage({
   params: {
     folder: 'obtc-uploads',
     allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'], // รองรับทั้งรูปภาพและวิดีโอ
-    public_id: () => Date.now()
+    public_id: () => Date.now() // สร้าง public_id โดยใช้เวลาปัจจุบัน
   }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage }); // ใช้ Cloudinary Storage
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// เชื่อมต่อ MySQL
+// เชื่อมต่อกับ MySQL
 const db = mysql.createConnection({
   host: 'shortline.proxy.rlwy.net',
   port: 32724,
@@ -91,9 +91,10 @@ app.post('/submit', upload.array('mediaFiles', 10), async (req, res) => {
   const uploadedUrls = [];
 
   try {
+    // Loop เพื่ออัปโหลดไฟล์ทั้งหมดไปยัง Cloudinary
     for (const file of files) {
       const result = await cloudinary.uploader.upload(file.path, {
-        resource_type: "auto" // รองรับทั้งรูปภาพและวิดีโอ
+        resource_type: 'auto'  // รองรับทั้งรูปภาพและวิดีโอ
       });
       uploadedUrls.push(result.secure_url);
     }
