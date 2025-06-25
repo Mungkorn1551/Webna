@@ -41,6 +41,7 @@
       border-radius: 6px;
       max-width: 100px;
       max-height: 80px;
+      margin-right: 5px;
     }
 
     .status {
@@ -79,7 +80,6 @@
     async function loadData() {
       // ✅ เพิ่ม processed=true เพื่อกรองเฉพาะรายการที่อนุมัติแล้ว
       const res = await fetch('/data-approved?department=สำนักงานปลัด');
-
       const data = await res.json();
       const tbody = document.querySelector("tbody");
       tbody.innerHTML = "";
@@ -90,12 +90,18 @@
           ? `<a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
           : "-";
 
+        // แยก URL รูปภาพที่เก็บไว้หลายรูปในคอลัมน์ photo
+        const photoUrls = row.photo ? row.photo.split(',') : [];
+
+        // สร้าง HTML สำหรับแสดงหลายรูปภาพ
+        const photosHTML = photoUrls.map(url => `<img src="${url}" alt="รูปภาพ">`).join('');
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row.name}</td>
           <td>${row.phone}</td>
           <td>${row.message}</td>
-          <td><img src="${row.photo}" alt="รูปภาพ"></td>
+          <td>${photosHTML || '-'}</td>
           <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>
