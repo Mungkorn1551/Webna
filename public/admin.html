@@ -188,7 +188,7 @@
           <th>ชื่อ</th>
           <th>เบอร์</th>
           <th>ข้อความ</th>
-          <th>รูป</th>
+          <th>ไฟล์</th>
           <th>อนุมัติ</th>
           <th>แผนก</th>
           <th>สถานะ</th>
@@ -213,6 +213,17 @@
           ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
           : "-";
 
+        // แยกไฟล์ที่อัปโหลด (รูปภาพและวิดีโอ)
+        const files = row.photo ? row.photo.split(',') : [];
+        const fileLinks = files.map(file => {
+          const fileExtension = file.split('.').pop().toLowerCase();
+          if (fileExtension === 'mp4' || fileExtension === 'mov' || fileExtension === 'avi') {
+            return `<video width="100" height="80" controls><source src="${file}" type="video/${fileExtension}">Your browser does not support the video tag.</video>`;
+          } else {
+            return `<img src="${file}" alt="ไฟล์" width="100" height="80">`;
+          }
+        }).join('<br>');
+
         const isDeptSelected = row.department && row.department !== "-";
 
         const tr = document.createElement("tr");
@@ -220,7 +231,7 @@
           <td>${row.name || "-"}</td>
           <td>${row.phone || "-"}</td>
           <td>${row.message || "-"}</td>
-          <td>${row.photo ? `<img src="${row.photo}" alt="รูป">` : "-"}</td>
+          <td>${fileLinks || "-"}</td>
           <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>

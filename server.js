@@ -22,7 +22,7 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'obtc-uploads',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
+    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
     public_id: () => Date.now()
   }
 });
@@ -89,16 +89,27 @@ app.get('/admin', (req, res) => {
 
 // ✅ ------------------- ระบบคำร้อง -------------------
 
-app.post('/submit', upload.single('photo'), (req, res) => {
+app.post('/submit', upload.array('mediaFiles', 10), async (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
-  const photo = req.file ? req.file.path : null;
+  const files = req.files;
+
+  const uploadedUrls = [];
+
+  for (const file of files) {
+    const result = await cloudinary.uploader.upload(file.path, {
+      resource_type: "auto" // รองรับทั้งรูปภาพและวิดีโอ
+    });
+    uploadedUrls.push(result.secure_url);
+  }
+
+  const photoUrls = uploadedUrls.join(','); // เก็บ URL หลายอันด้วยคอมม่า
 
   const sql = `
     INSERT INTO requests 
     (name, phone, address, category, message, latitude, longitude, photo)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  const values = [name, phone, address, category, message, latitude, longitude, photo];
+  const values = [name, phone, address, category, message, latitude, longitude, photoUrls];
 
   db.query(sql, values, (err, result) => {
     if (err) {

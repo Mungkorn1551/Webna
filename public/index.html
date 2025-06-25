@@ -121,13 +121,21 @@
             <label>ที่อยู่:</label>
             <textarea name="address" rows="2" required></textarea>
 
-            
+            <label>หมวดหมู่:</label>
+            <select name="category" required>
+                <option value="">-- เลือกหมวดหมู่ --</option>
+                <option value="ต้นไม้">ต้นไม้</option>
+                <option value="ขยะ">ขยะ</option>
+                <option value="ไฟฟ้า">ไฟฟ้า</option>
+                <option value="ลอกท่อ">ลอกท่อ</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+            </select>
 
             <label>ข้อความ:</label>
             <textarea name="message" rows="5" required></textarea>
 
-            <label>แนบรูปภาพ (ถ้ามี):</label>
-            <input type="file" name="photo" accept="image/*">
+            <label>แนบรูปภาพหรือวิดีโอ (หลายไฟล์ได้):</label>
+            <input type="file" name="mediaFiles" multiple accept="image/*,video/*">
 
             <button type="submit">📩 ส่งคำร้อง</button>
         </form>
