@@ -4,33 +4,52 @@
   <meta charset="UTF-8" />
   <title>✅ คำร้องที่อนุมัติแล้ว</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kanit&display=swap');
+
     body {
       font-family: 'Kanit', sans-serif;
-      background: #f9f9f9;
-      padding: 30px;
+      background: linear-gradient(to bottom right, #f0fdf4, #e0f2fe);
+      padding: 40px;
     }
 
     h2 {
       text-align: center;
-      color: #15563b;
-      margin-bottom: 10px;
+      color: #166534;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 30px;
+      background-color: #22c55e;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background-color: #16a34a;
     }
 
     .tabs {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
     }
 
     .tab {
       display: inline-block;
       margin: 4px;
-      padding: 10px 16px;
-      border-radius: 8px;
+      padding: 10px 18px;
+      border-radius: 20px;
       background: #e2e8f0;
-      color: #111827;
+      color: #1e293b;
       font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      transition: all 0.2s ease;
     }
 
     .tab:hover {
@@ -42,36 +61,29 @@
       color: white;
     }
 
-    .back-btn {
-      display: inline-block;
-      margin-bottom: 20px;
-      background-color: #16a34a;
-      color: white;
-      padding: 10px 16px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-    }
-
     table {
       width: 100%;
       border-collapse: collapse;
-      background: #fff;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
 
     th, td {
-      padding: 12px 10px;
+      padding: 14px 12px;
       text-align: center;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #e2e8f0;
     }
 
     th {
-      background-color: #15563b;
+      background-color: #14532d;
       color: white;
-      position: sticky;
-      top: 0;
-      z-index: 1;
+      font-size: 16px;
+    }
+
+    tr:hover {
+      background-color: #f0fdf4;
     }
 
     img {
@@ -96,6 +108,7 @@
     a.map-link {
       color: #2563eb;
       text-decoration: none;
+      font-weight: bold;
     }
 
     a.map-link:hover {
@@ -106,12 +119,10 @@
 <body>
   <h2>✅ รายการคำร้องที่อนุมัติแล้ว</h2>
 
-  <!-- ปุ่มกลับไปหน้า admin -->
   <div style="text-align: center;">
     <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
   </div>
 
-  <!-- Tabs เลือกแผนก -->
   <div class="tabs">
     <span class="tab active" onclick="loadData('ทั้งหมด', this)">✅ ทั้งหมด</span>
     <span class="tab" onclick="loadData('สำนักงานปลัด', this)">📂 สำนักงานปลัด</span>
@@ -121,7 +132,6 @@
     <span class="tab" onclick="loadData('อื่นๆ', this)">📁 อื่นๆ</span>
   </div>
 
-  <!-- ตารางข้อมูล -->
   <table id="data-table">
     <thead>
       <tr>
