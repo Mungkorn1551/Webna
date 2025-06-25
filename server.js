@@ -20,12 +20,16 @@ cloudinary.config({
 // ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'obtc-uploads',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'], // รองรับทั้งรูปภาพและวิดีโอ
-    public_id: () => Date.now()
+  params: async (req, file) => {
+    return {
+      folder: 'obtc-uploads',
+      resource_type: 'auto', // 🟢 สำคัญ! รองรับวิดีโอ
+      allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
+      public_id: () => Date.now().toString()
+    };
   }
 });
+
 const upload = multer({ storage });
 
 // ✅ Middleware
