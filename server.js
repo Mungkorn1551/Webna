@@ -41,7 +41,7 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// ✅ เชื่อมต่อ MySQL (แบบใส่ค่าตรง)
+// ✅ เชื่อมต่อ MySQL
 const db = mysql.createConnection({
   host: 'shortline.proxy.rlwy.net',
   port: 32724,
@@ -58,14 +58,17 @@ db.connect((err) => {
   }
 });
 
-// ✅ ------------------- ADMIN LOGIN -------------------
+// ✅ รหัสผ่านแอดมิน
 const ADMIN_PASSWORD = '123456';
+
+// ------------------- ADMIN LOGIN -------------------
 
 app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
 
 app.post('/admin-login', (req, res) => {
+  console.log('🟡 ล็อกอินแอดมิน:', req.body);
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
     req.session.loggedIn = true;
@@ -89,8 +92,12 @@ app.get('/admin', (req, res) => {
   }
 });
 
-// ✅ ------------------- ระบบคำร้อง -------------------
+// ------------------- SUBMIT FORM -------------------
+
 app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
+  console.log('📨 รับข้อมูลใหม่:', JSON.stringify(req.body, null, 2));
+  console.log('🖼️ ไฟล์แนบ:', req.files.map(f => f.originalname));
+
   const { name, phone, address, category, message, latitude, longitude } = req.body;
   const files = req.files;
 
@@ -114,7 +121,7 @@ app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
       return res.status(500).send('❌ บันทึกไม่สำเร็จ');
     }
 
-    console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
+    console.log('✅ บันทึกคำร้อง:', JSON.stringify(result, null, 2));
     res.send(`
       <h2>✅ ส่งคำร้องสำเร็จ</h2>
       <p>ขอบคุณ ${name}</p>
@@ -122,6 +129,8 @@ app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
     `);
   });
 });
+
+// ------------------- API ข้อมูลคำร้อง -------------------
 
 app.get('/data', (req, res) => {
   const department = req.query.department;
@@ -137,6 +146,7 @@ app.get('/data', (req, res) => {
 
   db.query(sql, params, (err, results) => {
     if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    console.log('📥 ดึงคำร้องใหม่:', results.length, 'รายการ');
     res.json(results);
   });
 });
@@ -153,6 +163,7 @@ app.get('/data-approved', (req, res) => {
 
   db.query(sql, [department], (err, results) => {
     if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    console.log(`✅ ดึงคำร้องที่อนุมัติ (${department}):`, results.length);
     res.json(results);
   });
 });
@@ -168,12 +179,16 @@ app.get('/processed', (req, res) => {
 app.get('/data-processed', (req, res) => {
   db.query('SELECT * FROM requests WHERE processed = true ORDER BY id DESC', (err, results) => {
     if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    console.log('📦 ดึงคำร้องที่ดำเนินการแล้ว:', results.length);
     res.json(results);
   });
 });
 
+// ------------------- อนุมัติ / ปฏิเสธ / เปลี่ยนสถานะ -------------------
+
 app.post('/approve/:id', (req, res) => {
   const id = req.params.id;
+  console.log('✅ อนุมัติคำร้อง ID:', id);
   db.query('UPDATE requests SET approved = 1, processed = true WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).send('❌ อนุมัติไม่สำเร็จ');
     res.send('✅ อนุมัติสำเร็จ');
@@ -182,6 +197,7 @@ app.post('/approve/:id', (req, res) => {
 
 app.post('/reject/:id', (req, res) => {
   const id = req.params.id;
+  console.log('❌ ปฏิเสธคำร้อง ID:', id);
   db.query('UPDATE requests SET approved = 0, processed = true WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).send('❌ ปฏิเสธไม่สำเร็จ');
     res.send('✅ ปฏิเสธคำร้องแล้ว');
@@ -191,6 +207,7 @@ app.post('/reject/:id', (req, res) => {
 app.post('/set-department/:id', (req, res) => {
   const id = req.params.id;
   const { department } = req.body;
+  console.log(`📌 เปลี่ยนแผนก ID:${id} -> ${department}`);
   db.query('UPDATE requests SET department = ? WHERE id = ?', [department, id], (err) => {
     if (err) return res.status(500).send('❌ เปลี่ยนแผนกไม่สำเร็จ');
     res.send('✅ เปลี่ยนแผนกแล้ว');
@@ -200,6 +217,7 @@ app.post('/set-department/:id', (req, res) => {
 app.post('/set-status/:id', (req, res) => {
   const id = req.params.id;
   const { status } = req.body;
+  console.log(`📋 เปลี่ยนสถานะ ID:${id} -> ${status}`);
   db.query('UPDATE requests SET status = ? WHERE id = ?', [status, id], (err) => {
     if (err) return res.status(500).send('❌ เปลี่ยนสถานะไม่สำเร็จ');
     res.send('✅ เปลี่ยนสถานะแล้ว');
@@ -208,10 +226,22 @@ app.post('/set-status/:id', (req, res) => {
 
 app.post('/disapprove/:id', (req, res) => {
   const id = req.params.id;
+  console.log('❌ ยกเลิกการอนุมัติ ID:', id);
   db.query('UPDATE requests SET approved = 0, processed = true WHERE id = ?', [id], (err) => {
     if (err) return res.status(500).send('เกิดข้อผิดพลาด');
     res.sendStatus(200);
   });
+});
+
+// ✅ 404 handler
+app.use((req, res) => {
+  res.status(404).send('ไม่พบหน้าเว็บที่คุณเรียก');
+});
+
+// ✅ error handler
+app.use((err, req, res, next) => {
+  console.error('💥 เกิดข้อผิดพลาดไม่คาดคิด:', err.stack);
+  res.status(500).send('เกิดข้อผิดพลาดในเซิร์ฟเวอร์');
 });
 
 app.listen(port, () => {
