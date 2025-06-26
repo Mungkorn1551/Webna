@@ -1,5 +1,3 @@
-require('dotenv').config(); // ✅ โหลดตัวแปรจาก .env
-
 const express = require('express');
 const multer = require('multer');
 const mysql = require('mysql2');
@@ -14,9 +12,9 @@ const port = process.env.PORT || 3000;
 
 // ✅ ตั้งค่า Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: 'dmaijyfud',
+  api_key: '962872364982724',
+  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g'
 });
 
 // ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
@@ -25,12 +23,13 @@ const storage = new CloudinaryStorage({
   params: async (req, file) => {
     return {
       folder: 'obtc-uploads',
-      resource_type: 'auto',
+      resource_type: 'auto', // 🟢 สำคัญ! รองรับวิดีโอ
       allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
       public_id: () => Date.now().toString()
     };
   }
 });
+
 const upload = multer({ storage });
 
 // ✅ Middleware
@@ -45,12 +44,13 @@ app.use(session({
 
 // ✅ เชื่อมต่อ MySQL
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME
+  host: 'shortline.proxy.rlwy.net',
+  port: 32724,
+  user: 'root',
+  password: 'TEwgIdrYsoKqZtnFnVeJnwgAyQSYxeLF',
+  database: 'railway'
 });
+
 db.connect((err) => {
   if (err) {
     console.error('❌ ไม่สามารถเชื่อมต่อ MySQL:', err);
@@ -59,8 +59,9 @@ db.connect((err) => {
   }
 });
 
-// ✅ ------------------- ADMIN -------------------
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+// ✅ ------------------- ADMIN LOGIN SYSTEM -------------------
+
+const ADMIN_PASSWORD = '123456';
 
 app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
@@ -91,23 +92,19 @@ app.get('/admin', (req, res) => {
 });
 
 // ✅ ------------------- ระบบคำร้อง -------------------
+
 app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
-  const files = req.files || [];
-
-  console.log('📥 ไฟล์ที่อัปโหลด:', JSON.stringify(files, null, 2));
+  const files = req.files; // รับไฟล์ที่อัปโหลด
 
   const uploadedUrls = [];
 
-  if (files.length > 0) {
-    files.forEach((file) => {
-      if (file && file.path) {
-        uploadedUrls.push(file.path);
-      }
-    });
-  }
+  // เก็บ URL ของไฟล์ทั้งหมดที่อัปโหลด
+  files.forEach((file) => {
+    uploadedUrls.push(file.path); // ใช้ file.path สำหรับ URL
+  });
 
-  const photoUrls = uploadedUrls.join(',') || null;
+  const photoUrls = uploadedUrls.join(','); // เชื่อม URL หลายอันด้วยคอมม่า
 
   const sql = `
     INSERT INTO requests 
@@ -119,11 +116,7 @@ app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
   db.query(sql, values, (err, result) => {
     if (err) {
       console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
-      return res.status(500).send(`
-        <h2>❌ บันทึกไม่สำเร็จ</h2>
-        <pre>${err.message}</pre>
-        <p><a href="/">🔙 กลับหน้าหลัก</a></p>
-      `);
+      return res.status(500).send('❌ บันทึกไม่สำเร็จ');
     }
 
     console.log('✅ บันทึกสำเร็จ ID:', result.insertId);
@@ -135,9 +128,10 @@ app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
   });
 });
 
-// ✅ API ดึงข้อมูลสำหรับแอดมิน
+// ✅ สำหรับ admin.html: ดึงคำร้องที่ยังไม่ processed
 app.get('/data', (req, res) => {
   const department = req.query.department;
+
   let sql = 'SELECT * FROM requests WHERE processed = false';
   const params = [];
 
@@ -149,15 +143,20 @@ app.get('/data', (req, res) => {
   sql += ' ORDER BY id DESC';
 
   db.query(sql, params, (err, results) => {
-    if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    if (err) {
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    }
     res.json(results);
   });
 });
 
+// ✅ สำหรับหน้า admin-sp: แสดงรายการที่อนุมัติแล้วและ processed แล้ว
 app.get('/data-approved', (req, res) => {
   const department = req.query.department;
 
-  if (!department) return res.status(400).json({ error: 'กรุณาระบุแผนก' });
+  if (!department) {
+    return res.status(400).json({ error: 'กรุณาระบุแผนก' });
+  }
 
   const sql = `
     SELECT * FROM requests 
@@ -166,7 +165,9 @@ app.get('/data-approved', (req, res) => {
   `;
 
   db.query(sql, [department], (err, results) => {
-    if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    if (err) {
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    }
     res.json(results);
   });
 });
@@ -181,12 +182,13 @@ app.get('/processed', (req, res) => {
 
 app.get('/data-processed', (req, res) => {
   db.query('SELECT * FROM requests WHERE processed = true ORDER BY id DESC', (err, results) => {
-    if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    if (err) {
+      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
+    }
     res.json(results);
   });
 });
 
-// ✅ API อัปเดตคำร้อง
 app.post('/approve/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 1, processed = true WHERE id = ?', [id], (err) => {
