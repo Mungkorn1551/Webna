@@ -1,5 +1,3 @@
-require('dotenv').config(); // ✅ โหลดค่าจาก .env เป็นบรรทัดแรก
-
 const express = require('express');
 const multer = require('multer');
 const mysql = require('mysql2');
@@ -8,34 +6,32 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
-const morgan = require('morgan');
-const helmet = require('helmet');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ✅ Cloudinary config จาก .env
+// ✅ ตั้งค่า Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: 'dmaijyfud',
+  api_key: '962872364982724',
+  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g'
 });
 
-// ✅ Cloudinary storage config
+// ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => ({
-    folder: 'obtc-uploads',
-    resource_type: 'auto',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
-    public_id: () => Date.now().toString()
-  })
+  params: async (req, file) => {
+    return {
+      folder: 'obtc-uploads',
+      resource_type: 'auto',
+      allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
+      public_id: () => Date.now().toString()
+    };
+  }
 });
 const upload = multer({ storage });
 
 // ✅ Middleware
-app.use(helmet());
-app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
@@ -45,13 +41,13 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// ✅ MySQL connection จาก .env
+// ✅ เชื่อมต่อ MySQL (แบบใส่ค่าตรง)
 const db = mysql.createConnection({
-  host: process.env.MYSQL_HOST,
-  port: process.env.MYSQL_PORT,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE
+  host: 'shortline.proxy.rlwy.net',
+  port: 32724,
+  user: 'root',
+  password: 'TEwgIdrYsoKqZtnFnVeJnwgAyQSYxeLF',
+  database: 'railway'
 });
 
 db.connect((err) => {
@@ -62,9 +58,8 @@ db.connect((err) => {
   }
 });
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-
 // ✅ ------------------- ADMIN LOGIN -------------------
+const ADMIN_PASSWORD = '123456';
 
 app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
@@ -95,10 +90,13 @@ app.get('/admin', (req, res) => {
 });
 
 // ✅ ------------------- ระบบคำร้อง -------------------
-
 app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
   const files = req.files;
+
+  if (!name || !phone || !address || !message) {
+    return res.status(400).send('❌ ข้อมูลไม่ครบ');
+  }
 
   const uploadedUrls = files.map(file => file.path);
   const photoUrls = uploadedUrls.join(',');
@@ -108,7 +106,7 @@ app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
     (name, phone, address, category, message, latitude, longitude, photo)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
-  const values = [name, phone, address, category, message, latitude, longitude, photoUrls];
+  const values = [name, phone, address, category || '', message, latitude, longitude, photoUrls];
 
   db.query(sql, values, (err, result) => {
     if (err) {
@@ -125,7 +123,6 @@ app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
   });
 });
 
-// ✅ ดึงคำร้องยังไม่ processed
 app.get('/data', (req, res) => {
   const department = req.query.department;
   let sql = 'SELECT * FROM requests WHERE processed = false';
@@ -144,7 +141,6 @@ app.get('/data', (req, res) => {
   });
 });
 
-// ✅ แสดงรายการที่อนุมัติแล้ว
 app.get('/data-approved', (req, res) => {
   const department = req.query.department;
   if (!department) return res.status(400).json({ error: 'กรุณาระบุแผนก' });
@@ -161,7 +157,6 @@ app.get('/data-approved', (req, res) => {
   });
 });
 
-// ✅ processed.html
 app.get('/processed', (req, res) => {
   if (req.session.loggedIn) {
     res.sendFile(path.join(__dirname, 'public', 'processed.html'));
@@ -177,7 +172,6 @@ app.get('/data-processed', (req, res) => {
   });
 });
 
-// ✅ จัดการคำร้อง
 app.post('/approve/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 1, processed = true WHERE id = ?', [id], (err) => {
@@ -220,18 +214,6 @@ app.post('/disapprove/:id', (req, res) => {
   });
 });
 
-// ✅ Fallback 404
-app.use((req, res) => {
-  res.status(404).send('ไม่พบหน้าเว็บที่คุณเรียก');
-});
-
-// ✅ Global error handler
-app.use((err, req, res, next) => {
-  console.error('💥 เกิดข้อผิดพลาดไม่คาดคิด:', err.stack);
-  res.status(500).send('เกิดข้อผิดพลาดในเซิร์ฟเวอร์');
-});
-
-// ✅ Start server
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
 });
