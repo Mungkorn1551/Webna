@@ -1,3 +1,5 @@
+require('dotenv').config(); // ✅ โหลดค่าจาก .env เป็นบรรทัดแรก
+
 const express = require('express');
 const multer = require('multer');
 const mysql = require('mysql2');
@@ -6,33 +8,34 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
+const morgan = require('morgan');
+const helmet = require('helmet');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ✅ ตั้งค่า Cloudinary
+// ✅ Cloudinary config จาก .env
 cloudinary.config({
-  cloud_name: 'dmaijyfud',
-  api_key: '962872364982724',
-  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
+// ✅ Cloudinary storage config
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => {
-    return {
-      folder: 'obtc-uploads',
-      resource_type: 'auto', // 🟢 สำคัญ! รองรับวิดีโอ
-      allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
-      public_id: () => Date.now().toString()
-    };
-  }
+  params: async (req, file) => ({
+    folder: 'obtc-uploads',
+    resource_type: 'auto',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
+    public_id: () => Date.now().toString()
+  })
 });
-
 const upload = multer({ storage });
 
 // ✅ Middleware
+app.use(helmet());
+app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
@@ -42,13 +45,13 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// ✅ เชื่อมต่อ MySQL
+// ✅ MySQL connection จาก .env
 const db = mysql.createConnection({
-  host: 'shortline.proxy.rlwy.net',
-  port: 32724,
-  user: 'root',
-  password: 'TEwgIdrYsoKqZtnFnVeJnwgAyQSYxeLF',
-  database: 'railway'
+  host: process.env.MYSQL_HOST,
+  port: process.env.MYSQL_PORT,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE
 });
 
 db.connect((err) => {
@@ -59,9 +62,9 @@ db.connect((err) => {
   }
 });
 
-// ✅ ------------------- ADMIN LOGIN SYSTEM -------------------
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-const ADMIN_PASSWORD = '123456';
+// ✅ ------------------- ADMIN LOGIN -------------------
 
 app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
@@ -95,16 +98,10 @@ app.get('/admin', (req, res) => {
 
 app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
   const { name, phone, address, category, message, latitude, longitude } = req.body;
-  const files = req.files; // รับไฟล์ที่อัปโหลด
+  const files = req.files;
 
-  const uploadedUrls = [];
-
-  // เก็บ URL ของไฟล์ทั้งหมดที่อัปโหลด
-  files.forEach((file) => {
-    uploadedUrls.push(file.path); // ใช้ file.path สำหรับ URL
-  });
-
-  const photoUrls = uploadedUrls.join(','); // เชื่อม URL หลายอันด้วยคอมม่า
+  const uploadedUrls = files.map(file => file.path);
+  const photoUrls = uploadedUrls.join(',');
 
   const sql = `
     INSERT INTO requests 
@@ -128,10 +125,9 @@ app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
   });
 });
 
-// ✅ สำหรับ admin.html: ดึงคำร้องที่ยังไม่ processed
+// ✅ ดึงคำร้องยังไม่ processed
 app.get('/data', (req, res) => {
   const department = req.query.department;
-
   let sql = 'SELECT * FROM requests WHERE processed = false';
   const params = [];
 
@@ -143,20 +139,15 @@ app.get('/data', (req, res) => {
   sql += ' ORDER BY id DESC';
 
   db.query(sql, params, (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
-    }
+    if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     res.json(results);
   });
 });
 
-// ✅ สำหรับหน้า admin-sp: แสดงรายการที่อนุมัติแล้วและ processed แล้ว
+// ✅ แสดงรายการที่อนุมัติแล้ว
 app.get('/data-approved', (req, res) => {
   const department = req.query.department;
-
-  if (!department) {
-    return res.status(400).json({ error: 'กรุณาระบุแผนก' });
-  }
+  if (!department) return res.status(400).json({ error: 'กรุณาระบุแผนก' });
 
   const sql = `
     SELECT * FROM requests 
@@ -165,13 +156,12 @@ app.get('/data-approved', (req, res) => {
   `;
 
   db.query(sql, [department], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
-    }
+    if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     res.json(results);
   });
 });
 
+// ✅ processed.html
 app.get('/processed', (req, res) => {
   if (req.session.loggedIn) {
     res.sendFile(path.join(__dirname, 'public', 'processed.html'));
@@ -182,13 +172,12 @@ app.get('/processed', (req, res) => {
 
 app.get('/data-processed', (req, res) => {
   db.query('SELECT * FROM requests WHERE processed = true ORDER BY id DESC', (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
-    }
+    if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     res.json(results);
   });
 });
 
+// ✅ จัดการคำร้อง
 app.post('/approve/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 1, processed = true WHERE id = ?', [id], (err) => {
@@ -231,6 +220,18 @@ app.post('/disapprove/:id', (req, res) => {
   });
 });
 
+// ✅ Fallback 404
+app.use((req, res) => {
+  res.status(404).send('ไม่พบหน้าเว็บที่คุณเรียก');
+});
+
+// ✅ Global error handler
+app.use((err, req, res, next) => {
+  console.error('💥 เกิดข้อผิดพลาดไม่คาดคิด:', err.stack);
+  res.status(500).send('เกิดข้อผิดพลาดในเซิร์ฟเวอร์');
+});
+
+// ✅ Start server
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
 });
