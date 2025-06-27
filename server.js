@@ -94,45 +94,51 @@ app.get('/admin', (req, res) => {
 
 // ------------------- SUBMIT FORM -------------------
 
-app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
-  console.log('📨 รับข้อมูลใหม่:', JSON.stringify(req.body, null, 2));
+app.post('/submit', upload.array('mediaFiles', 10), async (req, res) => {
+  try {
+    console.log('📨 รับข้อมูลใหม่:', JSON.stringify(req.body, null, 2));
 
-  const files = req.files || []; // ✅ กันกรณีไม่มีไฟล์
-  if (files.length === 0) {
-    console.log('📭 ไม่มีไฟล์แนบมา');
-  } else {
-    console.log('🖼️ ไฟล์แนบ:', files.map(f => f.originalname));
-  }
-
-  const { name, phone, address, category, message, latitude, longitude } = req.body;
-
-  if (!name || !phone || !address || !message) {
-    return res.status(400).send('❌ ข้อมูลไม่ครบ');
-  }
-
-  const uploadedUrls = files.map(file => file.path);
-  const photoUrls = uploadedUrls.join(',');
-
-  const sql = `
-    INSERT INTO requests 
-    (name, phone, address, category, message, latitude, longitude, photo)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-  const values = [name, phone, address, category || '', message, latitude, longitude, photoUrls];
-
-  db.query(sql, values, (err, result) => {
-    if (err) {
-      console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
-      return res.status(500).send('❌ บันทึกไม่สำเร็จ');
+    const files = req.files || [];
+    if (files.length === 0) {
+      console.log('📭 ไม่มีไฟล์แนบมา');
+    } else {
+      console.log('🖼️ ไฟล์แนบ:', files.map(f => f.originalname));
     }
 
-    console.log('✅ บันทึกคำร้อง:', JSON.stringify(result, null, 2));
-    res.send(`
-      <h2>✅ ส่งคำร้องสำเร็จ</h2>
-      <p>ขอบคุณ ${name}</p>
-      <p><a href="/">🔙 กลับหน้าหลัก</a></p>
-    `);
-  });
+    const { name, phone, address, category, message, latitude, longitude } = req.body;
+
+    if (!name || !phone || !address || !message) {
+      return res.status(400).send('❌ ข้อมูลไม่ครบ');
+    }
+
+    const uploadedUrls = files.map(file => file.path);
+    const photoUrls = uploadedUrls.join(',');
+
+    const sql = `
+      INSERT INTO requests 
+      (name, phone, address, category, message, latitude, longitude, photo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    const values = [name, phone, address, category || '', message, latitude, longitude, photoUrls];
+
+    db.query(sql, values, (err, result) => {
+      if (err) {
+        console.error('❌ บันทึกข้อมูลล้มเหลว:', err);
+        return res.status(500).send('❌ บันทึกไม่สำเร็จ');
+      }
+
+      console.log('✅ บันทึกคำร้อง:', JSON.stringify(result, null, 2));
+      res.send(`
+        <h2>✅ ส่งคำร้องสำเร็จ</h2>
+        <p>ขอบคุณ ${name}</p>
+        <p><a href="/">🔙 กลับหน้าหลัก</a></p>
+      `);
+    });
+
+  } catch (error) {
+    console.error('💥 เกิดข้อผิดพลาดไม่คาดคิด:', error.message || error);
+    res.status(500).send('💥 เกิดข้อผิดพลาดไม่คาดคิด');
+  }
 });
 
 // ------------------- API ข้อมูลคำร้อง -------------------
