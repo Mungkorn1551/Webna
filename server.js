@@ -96,10 +96,15 @@ app.get('/admin', (req, res) => {
 
 app.post('/submit', upload.array('mediaFiles', 10), (req, res) => {
   console.log('📨 รับข้อมูลใหม่:', JSON.stringify(req.body, null, 2));
-  console.log('🖼️ ไฟล์แนบ:', req.files.map(f => f.originalname));
+
+  const files = req.files || []; // ✅ กันกรณีไม่มีไฟล์
+  if (files.length === 0) {
+    console.log('📭 ไม่มีไฟล์แนบมา');
+  } else {
+    console.log('🖼️ ไฟล์แนบ:', files.map(f => f.originalname));
+  }
 
   const { name, phone, address, category, message, latitude, longitude } = req.body;
-  const files = req.files;
 
   if (!name || !phone || !address || !message) {
     return res.status(400).send('❌ ข้อมูลไม่ครบ');
