@@ -16,6 +16,21 @@ cloudinary.config({
   api_key: '962872364982724',
   api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g'
 });
+// ✅ ทดสอบอัปโหลดรูปตรง ๆ ไปยัง Cloudinary
+cloudinary.uploader.upload(
+  "https://res.cloudinary.com/demo/image/upload/sample.jpg",
+  {
+    folder: 'test-folder',
+    resource_type: 'image'
+  },
+  (error, result) => {
+    if (error) {
+      console.error("❌ Cloudinary error:", error);
+    } else {
+      console.log("✅ Cloudinary upload success:", result.secure_url);
+    }
+  }
+);
 
 // ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
 const storage = new CloudinaryStorage({
@@ -98,20 +113,22 @@ app.post('/submit', upload.array('mediaFiles', 10), async (req, res) => {
   try {
     console.log('📨 รับข้อมูลใหม่:', JSON.stringify(req.body, null, 2));
 
-    const files = req.files || [];
+    const files = Array.isArray(req.files) ? req.files : [];
     if (files.length === 0) {
       console.log('📭 ไม่มีไฟล์แนบมา');
     } else {
       console.log('🖼️ ไฟล์แนบ:', files.map(f => f.originalname));
     }
 
-    const { name, phone, address, category, message, latitude, longitude } = req.body;
+    const { name, phone, address, message, latitude, longitude } = req.body;
+    const category = ''; // ไม่มี category ในฟอร์มแล้ว
 
+    // ตรวจสอบข้อมูลที่จำเป็น
     if (!name || !phone || !address || !message) {
       return res.status(400).send('❌ ข้อมูลไม่ครบ');
     }
 
-    const uploadedUrls = files.map(file => file.path);
+    const uploadedUrls = files.map(file => file.path); // ได้ path จาก Cloudinary
     const photoUrls = uploadedUrls.join(',');
 
     const sql = `
@@ -119,7 +136,7 @@ app.post('/submit', upload.array('mediaFiles', 10), async (req, res) => {
       (name, phone, address, category, message, latitude, longitude, photo)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    const values = [name, phone, address, category || '', message, latitude, longitude, photoUrls];
+    const values = [name, phone, address, category, message, latitude, longitude, photoUrls];
 
     db.query(sql, values, (err, result) => {
       if (err) {
@@ -136,10 +153,12 @@ app.post('/submit', upload.array('mediaFiles', 10), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('💥 เกิดข้อผิดพลาดไม่คาดคิด:', error.message || error);
+    // 🔧 Log ให้ละเอียดขึ้น
+    console.error('💥 เกิดข้อผิดพลาดไม่คาดคิด:', error);
     res.status(500).send('💥 เกิดข้อผิดพลาดไม่คาดคิด');
   }
 });
+
 
 // ------------------- API ข้อมูลคำร้อง -------------------
 
