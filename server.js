@@ -6,6 +6,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid'); // ✅ เพิ่ม uuid
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,12 +21,12 @@ cloudinary.config({
 // ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: async (req, file) => ({
+  params: {
     folder: 'obtc-uploads',
     resource_type: 'auto',
     allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
-    public_id: () => Date.now().toString()
-  })
+    public_id: uuidv4 // ✅ ใช้ uuid แทนฟังก์ชัน Date.now()
+  }
 });
 const upload = multer({ storage });
 
@@ -85,11 +86,10 @@ app.get('/admin', (req, res) => {
 });
 
 // ------------------- SUBMIT FORM -------------------
-// แก้ตรงนี้: ใช้ .single แทน .array
 app.post('/submit', upload.single('mediaFile'), async (req, res) => {
   try {
     console.log('📨 รับข้อมูลใหม่:', JSON.stringify(req.body, null, 2));
-    console.log('🖼️ req.file:', req.file); // เปลี่ยนจาก req.files
+    console.log('🖼️ req.file:', req.file);
 
     const file = req.file;
     if (!file) {
@@ -99,13 +99,12 @@ app.post('/submit', upload.single('mediaFile'), async (req, res) => {
     }
 
     const { name, phone, address, message, latitude, longitude } = req.body;
-    const category = ''; // ไม่ใช้แล้ว
+    const category = '';
 
     if (!name || !phone || !address || !message) {
       return res.status(400).send('❌ ข้อมูลไม่ครบ');
     }
 
-    // ✅ แก้ตรงนี้: ใช้ path เดียว ไม่ใช่ array
     const photoUrl = file ? file.path : '';
 
     const sql = `
@@ -134,7 +133,6 @@ app.post('/submit', upload.single('mediaFile'), async (req, res) => {
     res.status(500).send('💥 เกิดข้อผิดพลาดไม่คาดคิด');
   }
 });
-
 
 // ------------------- API -------------------
 app.get('/data', (req, res) => {
