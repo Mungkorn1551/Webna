@@ -10,8 +10,6 @@
       margin: 0;
       padding: 20px;
     }
-
-    /* ✅ Navbar */
     .navbar {
       background-color: #15563b;
       padding: 10px 20px;
@@ -19,19 +17,16 @@
       border-radius: 10px;
       margin-bottom: 20px;
     }
-
     .navbar-container {
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
     }
-
     .nav-links {
       display: flex;
       gap: 16px;
     }
-
     .nav-link {
       color: white;
       text-decoration: none;
@@ -40,38 +35,31 @@
       border-radius: 8px;
       transition: background-color 0.2s ease;
     }
-
     .nav-link:hover {
       background-color: #1e6e50;
     }
-
     .nav-link.active {
       background-color: #1e6e50;
     }
-
     h2 {
       margin: 0;
     }
-
     .table-wrapper {
       overflow-x: auto;
       background: white;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       min-width: 900px;
     }
-
     th, td {
       padding: 14px 10px;
       text-align: center;
       border-bottom: 1px solid #e2e8f0;
     }
-
     th {
       background-color: #15563b;
       color: white;
@@ -79,13 +67,16 @@
       top: 0;
       z-index: 1;
     }
-
     img {
-      max-width: 80px;
-      max-height: 60px;
+      max-width: 120px;
+      max-height: 100px;
       border-radius: 6px;
     }
-
+    video {
+      max-width: 300px;
+      max-height: 200px;
+      border-radius: 6px;
+    }
     .btn {
       padding: 6px 14px;
       font-size: 14px;
@@ -96,30 +87,24 @@
       transition: background-color 0.2s ease;
       font-family: 'Kanit', sans-serif;
     }
-
     .btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-
     .btn.approve {
       background-color: #22c55e;
       color: white;
     }
-
     .btn.reject {
       background-color: #ef4444;
       color: white;
     }
-
     .btn.approve:hover:not(:disabled) {
       background-color: #16a34a;
     }
-
     .btn.reject:hover:not(:disabled) {
       background-color: #dc2626;
     }
-
     select {
       padding: 6px;
       border-radius: 6px;
@@ -127,50 +112,25 @@
       width: 110px;
       font-family: 'Kanit', sans-serif;
     }
-
     .status {
       font-weight: bold;
     }
-
     .status.รอตรวจสอบ,
     .status.pending {
       color: #f97316;
     }
-
     .status.เสร็จสิ้น {
       color: #16a34a;
     }
-
     a.map-link {
       text-decoration: none;
       color: #2563eb;
       font-weight: bold;
     }
-
-    @media (max-width: 768px) {
-      table {
-        min-width: 800px;
-      }
-
-      img {
-        max-width: 60px;
-      }
-
-      .btn {
-        font-size: 12px;
-        padding: 4px 10px;
-      }
-
-      select {
-        width: 100%;
-        font-size: 13px;
-      }
-    }
   </style>
 </head>
 <body>
 
-  <!-- ✅ Navbar -->
   <nav class="navbar">
     <div class="navbar-container">
       <h2>📋 ระบบจัดการคำร้อง</h2>
@@ -213,14 +173,22 @@
           ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
           : "-";
 
-        // แยกไฟล์ที่อัปโหลด (รูปภาพและวิดีโอ)
-        const files = row.photo ? row.photo.split(',') : [];
+        let files = [];
+        try {
+          files = row.photo ? JSON.parse(row.photo) : [];
+        } catch (e) {
+          console.error('⚠️ JSON parse error:', e);
+          files = [];
+        }
+
         const fileLinks = files.map(file => {
-          const fileExtension = file.split('.').pop().toLowerCase();
-          if (fileExtension === 'mp4' || fileExtension === 'mov' || fileExtension === 'avi') {
-            return `<video width="100" height="80" controls><source src="${file}" type="video/${fileExtension}">Your browser does not support the video tag.</video>`;
+          if (file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.avi')) {
+            return `<video controls width="300" height="200">
+                      <source src="${file}" type="video/mp4">
+                      ไม่รองรับวิดีโอ
+                    </video>`;
           } else {
-            return `<img src="${file}" alt="ไฟล์" width="100" height="80">`;
+            return `<img src="${file}" alt="ไฟล์">`;
           }
         }).join('<br>');
 

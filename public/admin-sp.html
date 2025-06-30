@@ -39,9 +39,16 @@
 
     img {
       border-radius: 6px;
-      max-width: 100px;
-      max-height: 80px;
-      margin-right: 5px;
+      max-width: 120px;
+      max-height: 100px;
+      margin: 2px;
+    }
+
+    video {
+      border-radius: 6px;
+      max-width: 300px;
+      max-height: 200px;
+      margin: 2px;
     }
 
     .status {
@@ -56,6 +63,16 @@
     .status.เสร็จสิ้น {
       color: #16a34a;
     }
+
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -66,7 +83,7 @@
         <th>ชื่อ</th>
         <th>เบอร์</th>
         <th>ข้อความ</th>
-        <th>รูป</th>
+        <th>ไฟล์</th>
         <th>อนุมัติ</th>
         <th>แผนก</th>
         <th>สถานะ</th>
@@ -78,7 +95,6 @@
 
   <script>
     async function loadData() {
-      // ✅ เพิ่ม processed=true เพื่อกรองเฉพาะรายการที่อนุมัติแล้ว
       const res = await fetch('/data-approved?department=สำนักงานปลัด');
       const data = await res.json();
       const tbody = document.querySelector("tbody");
@@ -90,18 +106,31 @@
           ? `<a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
           : "-";
 
-        // แยก URL รูปภาพที่เก็บไว้หลายรูปในคอลัมน์ photo
-        const photoUrls = row.photo ? row.photo.split(',') : [];
+        let files = [];
+        try {
+          files = row.photo ? JSON.parse(row.photo) : [];
+        } catch (e) {
+          console.error('⚠️ JSON parse error:', e);
+          files = [];
+        }
 
-        // สร้าง HTML สำหรับแสดงหลายรูปภาพ
-        const photosHTML = photoUrls.map(url => `<img src="${url}" alt="รูปภาพ">`).join('');
+        const mediaHtml = files.map(file => {
+          if (file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.avi')) {
+            return `<video controls>
+                      <source src="${file}" type="video/mp4">
+                      ไม่รองรับวิดีโอ
+                    </video>`;
+          } else {
+            return `<img src="${file}" alt="ไฟล์">`;
+          }
+        }).join('<br>');
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${row.name}</td>
           <td>${row.phone}</td>
           <td>${row.message}</td>
-          <td>${photosHTML || '-'}</td>
+          <td>${mediaHtml || '-'}</td>
           <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>

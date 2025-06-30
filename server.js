@@ -6,7 +6,7 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid'); // ✅ เพิ่ม uuid
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,13 +21,17 @@ cloudinary.config({
 // ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'obtc-uploads',
-    resource_type: 'auto',
-    allowed_formats: ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi'],
-    public_id: uuidv4 // ✅ ใช้ uuid แทนฟังก์ชัน Date.now()
+  params: async (req, file) => {
+    return {
+      folder: 'obtc-uploads',
+      resource_type: 'video',
+      format: 'mp4', // ✅ บังคับ Cloudinary แปลงเป็น mp4
+      public_id: uuidv4()
+    };
   }
 });
+
+
 const upload = multer({ storage });
 
 // ✅ Middleware
@@ -86,16 +90,19 @@ app.get('/admin', (req, res) => {
 });
 
 // ------------------- SUBMIT FORM -------------------
-app.post('/submit', upload.single('mediaFile'), async (req, res) => {
+// เปลี่ยนจาก single ➡️ array เพื่อรองรับหลายไฟล์
+app.post('/submit', upload.array('mediaFiles'), async (req, res) => {
   try {
     console.log('📨 รับข้อมูลใหม่:', JSON.stringify(req.body, null, 2));
-    console.log('🖼️ req.file:', req.file);
+    console.log('🖼️ req.files:', req.files);
 
-    const file = req.file;
-    if (!file) {
+    const files = req.files || [];
+    if (files.length === 0) {
       console.log('📭 ไม่มีไฟล์แนบมา');
     } else {
-      console.log('🖼️ ไฟล์แนบ:', file.originalname);
+      files.forEach(file => {
+        console.log('🖼️ ไฟล์แนบ:', file.originalname);
+      });
     }
 
     const { name, phone, address, message, latitude, longitude } = req.body;
@@ -105,7 +112,8 @@ app.post('/submit', upload.single('mediaFile'), async (req, res) => {
       return res.status(400).send('❌ ข้อมูลไม่ครบ');
     }
 
-    const photoUrl = file ? file.path : '';
+    const photoUrls = files.map(f => f.path);
+    const photoUrl = JSON.stringify(photoUrls); // เก็บเป็น JSON ใน MySQL
 
     const sql = `
       INSERT INTO requests 
@@ -134,7 +142,7 @@ app.post('/submit', upload.single('mediaFile'), async (req, res) => {
   }
 });
 
-// ------------------- API -------------------
+// ------------------- API และ ACTIONS (เหมือนเดิม ไม่ต้องแก้) -------------------
 app.get('/data', (req, res) => {
   const department = req.query.department;
   let sql = 'SELECT * FROM requests WHERE processed = false';
@@ -184,7 +192,6 @@ app.get('/data-processed', (req, res) => {
   });
 });
 
-// ------------------- ACTIONS -------------------
 app.post('/approve/:id', (req, res) => {
   const id = req.params.id;
   db.query('UPDATE requests SET approved = 1, processed = true WHERE id = ?', [id], (err) => {

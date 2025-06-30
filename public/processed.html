@@ -91,8 +91,14 @@
 
     img {
       border-radius: 6px;
-      max-width: 100px;
-      max-height: 80px;
+      max-width: 120px;
+      max-height: 100px;
+    }
+
+    video {
+      border-radius: 6px;
+      max-width: 300px;
+      max-height: 200px;
     }
 
     .status {
@@ -141,7 +147,7 @@
         <th>ชื่อ</th>
         <th>เบอร์</th>
         <th>ข้อความ</th>
-        <th>รูป</th>
+        <th>ไฟล์</th>
         <th>อนุมัติ</th>
         <th>แผนก</th>
         <th>สถานะ</th>
@@ -151,7 +157,6 @@
     <tbody></tbody>
   </table>
 
-    <!-- ... (เหมือนเดิมทั้งหมดจนถึงส่วน script) -->
   <script>
     async function loadData(department, clickedTab = null) {
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -173,15 +178,22 @@
           ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
           : "-";
 
-        // ✅ รองรับหลายไฟล์ (รูป/วิดีโอ)
-        const mediaHtml = (row.photo || '').split(',').map(url => {
-          const trimmed = url.trim();
-          if (trimmed.endsWith('.mp4') || trimmed.includes('/video/')) {
-            return `<video src="${trimmed}" controls width="100" style="margin-bottom: 5px;"></video>`;
-          } else if (trimmed) {
-            return `<img src="${trimmed}" alt="รูป" width="100" style="margin-bottom: 5px;">`;
+        let files = [];
+        try {
+          files = row.photo ? JSON.parse(row.photo) : [];
+        } catch (e) {
+          console.error('⚠️ JSON parse error:', e);
+          files = [];
+        }
+
+        const mediaHtml = files.map(file => {
+          if (file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.avi')) {
+            return `<video controls width="300" height="200">
+                      <source src="${file}" type="video/mp4">
+                      ไม่รองรับวิดีโอ
+                    </video>`;
           } else {
-            return '-';
+            return `<img src="${file}" alt="ไฟล์">`;
           }
         }).join('<br>');
 
@@ -190,7 +202,7 @@
           <td>${row.name}</td>
           <td>${row.phone}</td>
           <td>${row.message}</td>
-          <td>${mediaHtml}</td>
+          <td>${mediaHtml || '-'}</td>
           <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>
@@ -200,8 +212,7 @@
       });
     }
 
-    // โหลดเริ่มต้น
     loadData("ทั้งหมด");
   </script>
-
-  </html>
+</body>
+</html>
