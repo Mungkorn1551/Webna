@@ -149,7 +149,6 @@
           <th>เบอร์</th>
           <th>ข้อความ</th>
           <th>ไฟล์</th>
-          <th>อนุมัติ</th>
           <th>แผนก</th>
           <th>สถานะ</th>
           <th>แผนที่</th>
@@ -200,7 +199,6 @@
           <td>${row.phone || "-"}</td>
           <td>${row.message || "-"}</td>
           <td>${fileLinks || "-"}</td>
-          <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
           <td>${row.department || "-"}</td>
           <td class="status ${row.status}">${statusText}</td>
           <td>${mapLink}</td>
@@ -221,6 +219,7 @@
             </select>
           </td>
         `;
+
         tbody.appendChild(tr);
       });
     }
