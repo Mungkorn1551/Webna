@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const multer = require('multer');
 const mysql = require('mysql2');
@@ -11,46 +13,40 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ✅ ตั้งค่า Cloudinary
 cloudinary.config({
-  cloud_name: 'dmaijyfud',
-  api_key: '962872364982724',
-  api_secret: '25H9IpsOeWV__LOoGPX6MYyrX0g'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// ✅ ตั้งค่า storage ให้ multer ใช้ Cloudinary
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
+    const resourceType = file.mimetype.startsWith('image') ? 'image' : 'video';
     return {
       folder: 'obtc-uploads',
-      resource_type: 'video',
-      format: 'mp4', // ✅ บังคับ Cloudinary แปลงเป็น mp4
+      resource_type: resourceType,
       public_id: uuidv4()
     };
   }
 });
-
-
 const upload = multer({ storage });
 
-// ✅ Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static('public'));
 app.use(session({
-  secret: 'hi-form-secret',
+  secret: process.env.SESSION_SECRET || 'hi-form-secret',
   resave: false,
   saveUninitialized: false
 }));
 
-// ✅ เชื่อมต่อ MySQL
 const db = mysql.createConnection({
-  host: 'shortline.proxy.rlwy.net',
-  port: 32724,
-  user: 'root',
-  password: 'TEwgIdrYsoKqZtnFnVeJnwgAyQSYxeLF',
-  database: 'railway'
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME
 });
 db.connect((err) => {
   if (err) {
@@ -60,9 +56,8 @@ db.connect((err) => {
   }
 });
 
-const ADMIN_PASSWORD = '123456';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
-// ------------------- ADMIN -------------------
 app.get('/admin-login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
@@ -89,22 +84,12 @@ app.get('/admin', (req, res) => {
   }
 });
 
-// ------------------- SUBMIT FORM -------------------
-// เปลี่ยนจาก single ➡️ array เพื่อรองรับหลายไฟล์
 app.post('/submit', upload.array('mediaFiles'), async (req, res) => {
   try {
     console.log('📨 รับข้อมูลใหม่:', JSON.stringify(req.body, null, 2));
     console.log('🖼️ req.files:', req.files);
 
     const files = req.files || [];
-    if (files.length === 0) {
-      console.log('📭 ไม่มีไฟล์แนบมา');
-    } else {
-      files.forEach(file => {
-        console.log('🖼️ ไฟล์แนบ:', file.originalname);
-      });
-    }
-
     const { name, phone, address, message, latitude, longitude } = req.body;
     const category = '';
 
@@ -112,8 +97,20 @@ app.post('/submit', upload.array('mediaFiles'), async (req, res) => {
       return res.status(400).send('❌ ข้อมูลไม่ครบ');
     }
 
-    const photoUrls = files.map(f => f.path);
-    const photoUrl = JSON.stringify(photoUrls); // เก็บเป็น JSON ใน MySQL
+    const photoUrls = files.map(f => {
+      let type = 'other';
+      if (f.mimetype.startsWith('image')) {
+        type = 'image';
+      } else if (f.mimetype.startsWith('video')) {
+        type = 'video';
+      }
+      return {
+        url: f.path,
+        type
+      };
+    });
+
+    const photoUrl = JSON.stringify(photoUrls);
 
     const sql = `
       INSERT INTO requests 
@@ -137,12 +134,11 @@ app.post('/submit', upload.array('mediaFiles'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('💥 เกิดข้อผิดพลาดไม่คาดคิด:', error.stack || error.message || error);
+    console.error('💥 เกิดข้อผิดพลาดไม่คาดคิด:', error);
     res.status(500).send('💥 เกิดข้อผิดพลาดไม่คาดคิด');
   }
 });
 
-// ------------------- API และ ACTIONS (เหมือนเดิม ไม่ต้องแก้) -------------------
 app.get('/data', (req, res) => {
   const department = req.query.department;
   let sql = 'SELECT * FROM requests WHERE processed = false';
@@ -185,8 +181,59 @@ app.get('/processed', (req, res) => {
   }
 });
 
+app.get('/admin-sp', (req, res) => {
+  if (req.session.loggedIn) {
+    res.sendFile(path.join(__dirname, 'public', 'admin-sp.html'));
+  } else {
+    res.redirect('/admin-login');
+  }
+});
+
+app.get('/admin-health', (req, res) => {
+  if (req.session.loggedIn) {
+    res.sendFile(path.join(__dirname, 'public', 'admin-health.html'));
+  } else {
+    res.redirect('/admin-login');
+  }
+});
+
+app.get('/admin-engineer', (req, res) => {
+  if (req.session.loggedIn) {
+    res.sendFile(path.join(__dirname, 'public', 'admin-engineer.html'));
+  } else {
+    res.redirect('/admin-login');
+  }
+});
+
+app.get('/admin-electric', (req, res) => {
+  if (req.session.loggedIn) {
+    res.sendFile(path.join(__dirname, 'public', 'admin-electric.html'));
+  } else {
+    res.redirect('/admin-login');
+  }
+});
+
+app.get('/admin-other', (req, res) => {
+  if (req.session.loggedIn) {
+    res.sendFile(path.join(__dirname, 'public', 'admin-other.html'));
+  } else {
+    res.redirect('/admin-login');
+  }
+});
+
 app.get('/data-processed', (req, res) => {
-  db.query('SELECT * FROM requests WHERE processed = true ORDER BY id DESC', (err, results) => {
+  const department = req.query.department;
+  let sql = 'SELECT * FROM requests WHERE processed = true';
+  const params = [];
+
+  if (department) {
+    sql += ' AND department = ?';
+    params.push(department);
+  }
+
+  sql += ' ORDER BY id DESC';
+
+  db.query(sql, params, (err, results) => {
     if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
     res.json(results);
   });
@@ -211,18 +258,25 @@ app.post('/reject/:id', (req, res) => {
 app.post('/set-department/:id', (req, res) => {
   const { department } = req.body;
   const id = req.params.id;
-  db.query('UPDATE requests SET department = ? WHERE id = ?', [department, id], (err) => {
-    if (err) return res.status(500).send('❌ เปลี่ยนแผนกไม่สำเร็จ');
-    res.send('✅ เปลี่ยนแผนกแล้ว');
-  });
-});
 
-app.post('/set-status/:id', (req, res) => {
-  const { status } = req.body;
-  const id = req.params.id;
-  db.query('UPDATE requests SET status = ? WHERE id = ?', [status, id], (err) => {
-    if (err) return res.status(500).send('❌ เปลี่ยนสถานะไม่สำเร็จ');
-    res.send('✅ เปลี่ยนสถานะแล้ว');
+  console.log(`📌 รับข้อมูลเปลี่ยนแผนก id=${id}, department=${department}`);
+
+  if (!department) {
+    return res.status(400).json({ message: '❌ ต้องระบุแผนก' });
+  }
+
+  db.query('UPDATE requests SET department = ? WHERE id = ?', [department, id], (err, result) => {
+    if (err) {
+      console.error('❌ SQL error:', err);
+      return res.status(500).json({ message: '❌ เปลี่ยนแผนกไม่สำเร็จ' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: '❌ ไม่พบคำร้องนี้' });
+    }
+
+    console.log(`✅ อัปเดตแผนก id=${id} -> ${department}`);
+    res.json({ message: '✅ เปลี่ยนแผนกแล้ว' });
   });
 });
 
@@ -234,7 +288,17 @@ app.post('/disapprove/:id', (req, res) => {
   });
 });
 
-// ✅ Error & 404
+app.get('/data-sp-all', (req, res) => {
+  db.query(
+    'SELECT * FROM requests WHERE department = ? ORDER BY id DESC',
+    ['สำนักงานปลัด'],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: 'เกิดข้อผิดพลาด' });
+      res.json(results);
+    }
+  );
+});
+
 app.use((req, res) => {
   res.status(404).send('ไม่พบหน้าเว็บที่คุณเรียก');
 });
@@ -244,7 +308,6 @@ app.use((err, req, res, next) => {
   res.status(500).send('เกิดข้อผิดพลาดในเซิร์ฟเวอร์');
 });
 
-// ✅ Start Server
 app.listen(port, () => {
   console.log(`🚀 Server running at http://localhost:${port}`);
 });

@@ -1,145 +1,124 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>📋 คำร้อง สำนักงานปลัด</title>
+  <meta charset="UTF-8" />
+  <title>📋 รายการคำร้อง - สำนักงานปลัด</title>
   <style>
     body {
       font-family: 'Kanit', sans-serif;
-      background: #f9f9f9;
-      padding: 30px;
+      background: #f1f5f9;
+      margin: 0;
+      padding: 20px;
     }
-
     h2 {
       text-align: center;
-      color: #15563b;
       margin-bottom: 20px;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
-      background: #fff;
+      background: white;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
     }
-
     th, td {
-      padding: 12px 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
       text-align: center;
-      border-bottom: 1px solid #ddd;
+      vertical-align: middle;
     }
-
     th {
-      background-color: #15563b;
+      background: #15563b;
       color: white;
-      position: sticky;
-      top: 0;
-      z-index: 1;
     }
-
-    img {
-      border-radius: 6px;
-      max-width: 120px;
-      max-height: 100px;
-      margin: 2px;
+    img, video {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-
-    video {
-      border-radius: 6px;
-      max-width: 300px;
-      max-height: 200px;
-      margin: 2px;
+    video.rotated-180 {
+      transform: rotate(180deg);
     }
-
-    .status {
-      font-weight: bold;
+    .media-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
     }
-
-    .status.รอตรวจสอบ,
-    .status.pending {
-      color: #f97316;
-    }
-
-    .status.เสร็จสิ้น {
-      color: #16a34a;
-    }
-
-    a {
+    a.map-link {
       color: #2563eb;
-      text-decoration: none;
       font-weight: bold;
-    }
-
-    a:hover {
-      text-decoration: underline;
+      text-decoration: none;
     }
   </style>
 </head>
 <body>
   <h2>📋 รายการคำร้อง - สำนักงานปลัด</h2>
-  <table id="data-table">
+
+  <table>
     <thead>
       <tr>
         <th>ชื่อ</th>
         <th>เบอร์</th>
         <th>ข้อความ</th>
         <th>ไฟล์</th>
-        <th>อนุมัติ</th>
         <th>แผนก</th>
         <th>สถานะ</th>
         <th>แผนที่</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="data-body"></tbody>
   </table>
 
   <script>
     async function loadData() {
-      const res = await fetch('/data-approved?department=สำนักงานปลัด');
+      const res = await fetch('/data-sp-all?_=' + Date.now());
       const data = await res.json();
-      const tbody = document.querySelector("tbody");
-      tbody.innerHTML = "";
+      const tbody = document.getElementById('data-body');
+      tbody.innerHTML = '';
 
       data.forEach(row => {
-        const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
-        const mapLink = row.latitude && row.longitude
-          ? `<a href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
-          : "-";
-
         let files = [];
         try {
           files = row.photo ? JSON.parse(row.photo) : [];
         } catch (e) {
-          console.error('⚠️ JSON parse error:', e);
-          files = [];
+          console.error('JSON parse error', e);
         }
 
-        const mediaHtml = files.map(file => {
-          if (file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.avi')) {
-            return `<video controls>
-                      <source src="${file}" type="video/mp4">
-                      ไม่รองรับวิดีโอ
-                    </video>`;
-          } else {
-            return `<img src="${file}" alt="ไฟล์">`;
-          }
-        }).join('<br>');
+        const fileLinks = `<div class="media-container">` + files.map(file => {
+          const url = typeof file === 'string' ? file : (file.url || '');
+          const type = file.type || '';
+          if (!url) return '';
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${row.name}</td>
-          <td>${row.phone}</td>
-          <td>${row.message}</td>
-          <td>${mediaHtml || '-'}</td>
-          <td>${row.approved === 1 ? "✅" : row.approved === 0 ? "❌" : "❓"}</td>
-          <td>${row.department || "-"}</td>
-          <td class="status ${row.status}">${statusText}</td>
-          <td>${mapLink}</td>
+          // ตัวอย่าง: ถ้าต้องการให้หมุนวิดีโอทุกไฟล์ (หรือปรับตามเงื่อนไขของคุณ)
+          if (type === 'video') {
+            return `<video controls class="rotated-180">
+                      <source src="${url}" type="video/mp4">วิดีโอนี้ไม่สามารถเล่นได้
+                    </video>`;
+          } else if (type === 'image') {
+            return `<img src="${url}" alt="ไฟล์">`;
+          } else {
+            return `<img src="${url}" alt="ไฟล์">`;
+          }
+        }).join('') + `</div>`;
+
+        const mapLink = row.latitude && row.longitude
+          ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
+          : '-';
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${row.name || '-'}</td>
+            <td>${row.phone || '-'}</td>
+            <td>${row.message || '-'}</td>
+            <td>${fileLinks || '-'}</td>
+            <td>${row.department || '-'}</td>
+            <td>${row.status || '-'}</td>
+            <td>${mapLink}</td>
+          </tr>
         `;
-        tbody.appendChild(tr);
       });
     }
-
     loadData();
   </script>
 </body>

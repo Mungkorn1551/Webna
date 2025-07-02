@@ -68,14 +68,16 @@
       z-index: 1;
     }
     img {
-      max-width: 120px;
-      max-height: 100px;
+      max-width: 150px;
+      max-height: 120px;
       border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     video {
       max-width: 300px;
       max-height: 200px;
       border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .btn {
       padding: 6px 14px;
@@ -160,99 +162,118 @@
   </div>
 
   <script>
-    async function loadData() {
-      const res = await fetch('/data');
-      const data = await res.json();
-      const tbody = document.querySelector("tbody");
-      tbody.innerHTML = "";
+  async function loadData() {
+    const res = await fetch('/data?_=' + Date.now()); // ป้องกัน cache
+    const data = await res.json();
+    console.log("📌 โหลดข้อมูลใหม่:", data);
 
-      data.forEach(row => {
-        const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
-        const mapLink = row.latitude && row.longitude
-          ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
-          : "-";
+    const tbody = document.querySelector("tbody");
+    tbody.innerHTML = "";
 
-        let files = [];
-        try {
-          files = row.photo ? JSON.parse(row.photo) : [];
-        } catch (e) {
-          console.error('⚠️ JSON parse error:', e);
-          files = [];
+    data.forEach(row => {
+      const statusText = row.status === 'pending' ? 'กำลังตรวจสอบ' : (row.status || '-');
+      const mapLink = row.latitude && row.longitude
+        ? `<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`
+        : "-";
+
+      let files = [];
+      try {
+        files = row.photo ? JSON.parse(row.photo) : [];
+      } catch (e) {
+        console.error('⚠️ JSON parse error:', e);
+        files = [];
+      }
+
+     const fileLinks = files.map(file => {
+        const fileUrl = typeof file === 'string' ? file : (file.url || "");
+        const fileType = file.type || "";
+
+        if (!fileUrl) {
+          return '';  // ข้ามถ้าไม่มี url
         }
 
-        const fileLinks = files.map(file => {
-          if (file.endsWith('.mp4') || file.endsWith('.mov') || file.endsWith('.avi')) {
-            return `<video controls width="300" height="200">
-                      <source src="${file}" type="video/mp4">
-                      ไม่รองรับวิดีโอ
-                    </video>`;
-          } else {
-            return `<img src="${file}" alt="ไฟล์">`;
-          }
-        }).join('<br>');
+        if (fileType === 'image') {
+          return `<img src="${fileUrl}" alt="ไฟล์" width="100">`;
+        } else if (fileType === 'video') {
+          return `<video controls><source src="${fileUrl}" type="video/mp4"></video>`;
+        } else if (fileUrl.toLowerCase().match(/\.(mp4|mov|avi)(\?|$)/)) {
+          return `<video controls><source src="${fileUrl}" type="video/mp4"></video>`;
+        } else {
+          return `<img src="${fileUrl}" alt="ไฟล์" width="100">`;
+        }
+      }).join('<br>');
 
-        const isDeptSelected = row.department && row.department !== "-";
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${row.name || "-"}</td>
-          <td>${row.phone || "-"}</td>
-          <td>${row.message || "-"}</td>
-          <td>${fileLinks || "-"}</td>
-          <td>${row.department || "-"}</td>
-          <td class="status ${row.status}">${statusText}</td>
-          <td>${mapLink}</td>
-          <td>
-            <button class="btn approve" onclick="approve(${row.id})" ${!isDeptSelected ? 'disabled' : ''}>✅ อนุมัติ</button><br>
-            <button class="btn reject" onclick="reject(${row.id})" ${!isDeptSelected ? 'disabled' : ''}>❌ ไม่อนุมัติ</button><br>
-            <select onchange="setDept(${row.id}, this.value)">
-              <option value="">เลือกแผนก</option>
-              <option value="สำนักงานปลัด" ${row.department === 'สำนักงานปลัด' ? 'selected' : ''}>สำนักงานปลัด</option>
-              <option value="สาธารณสุข" ${row.department === 'สาธารณสุข' ? 'selected' : ''}>สาธารณสุข</option>
-              <option value="กองช่าง" ${row.department === 'กองช่าง' ? 'selected' : ''}>กองช่าง</option>
-              <option value="ไฟฟ้า" ${row.department === 'ไฟฟ้า' ? 'selected' : ''}>ไฟฟ้า</option>
-              <option value="อื่นๆ" ${row.department === 'อื่นๆ' ? 'selected' : ''}>อื่นๆ</option>
-            </select><br>
-            <select onchange="setStatus(${row.id}, this.value)">
-              <option ${row.status === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option>
-              <option ${row.status === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
-            </select>
-          </td>
-        `;
 
-        tbody.appendChild(tr);
-      });
-    }
 
-    async function approve(id) {
-      await fetch(`/approve/${id}`, { method: 'POST' });
-      loadData();
-    }
+      const isDeptSelected = row.department && row.department !== "-";
 
-    async function reject(id) {
-      await fetch(`/reject/${id}`, { method: 'POST' });
-      loadData();
-    }
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row.name || "-"}</td>
+        <td>${row.phone || "-"}</td>
+        <td>${row.message || "-"}</td>
+        <td>${fileLinks || "-"}</td>
+        <td>${row.department || "-"}</td>
+        <td class="status ${row.status}">${statusText}</td>
+        <td>${mapLink}</td>
+        <td>
+          <button class="btn approve" onclick="approve(${row.id})" ${!isDeptSelected ? 'disabled' : ''}>✅ อนุมัติ</button><br>
+          <button class="btn reject" onclick="reject(${row.id})" ${!isDeptSelected ? 'disabled' : ''}>❌ ไม่อนุมัติ</button><br>
+          <select onchange="setDept(${row.id}, this.value)">
+            <option value="">เลือกแผนก</option>
+            <option value="สำนักงานปลัด" ${row.department === 'สำนักงานปลัด' ? 'selected' : ''}>สำนักงานปลัด</option>
+            <option value="สาธารณสุข" ${row.department === 'สาธารณสุข' ? 'selected' : ''}>สาธารณสุข</option>
+            <option value="กองช่าง" ${row.department === 'กองช่าง' ? 'selected' : ''}>กองช่าง</option>
+            <option value="ไฟฟ้า" ${row.department === 'ไฟฟ้า' ? 'selected' : ''}>ไฟฟ้า</option>
+            <option value="อื่นๆ" ${row.department === 'อื่นๆ' ? 'selected' : ''}>อื่นๆ</option>
+          </select><br>
+          <select onchange="setStatus(${row.id}, this.value)">
+            <option ${row.status === 'รอตรวจสอบ' ? 'selected' : ''}>รอตรวจสอบ</option>
+            <option ${row.status === 'เสร็จสิ้น' ? 'selected' : ''}>เสร็จสิ้น</option>
+          </select>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-    async function setDept(id, dept) {
-      await fetch(`/set-department/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ department: dept })
-      });
-      loadData();
-    }
-
-    async function setStatus(id, status) {
-      await fetch(`/set-status/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      });
-      loadData();
-    }
-
+  async function approve(id) {
+    const res = await fetch(`/approve/${id}`, { method: 'POST' });
+    alert(await res.text());
     loadData();
-  </script>
+  }
+
+  async function reject(id) {
+    const res = await fetch(`/reject/${id}`, { method: 'POST' });
+    alert(await res.text());
+    loadData();
+  }
+
+  async function setDept(id, dept) {
+    const res = await fetch(`/set-department/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ department: dept })
+    });
+    const data = await res.json();
+    alert(data.message || 'เปลี่ยนแผนกแล้ว');
+    loadData();
+  }
+
+  async function setStatus(id, status) {
+    const res = await fetch(`/set-status/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    alert(await res.text());
+    loadData();
+  }
+
+  loadData();
+</script>
+
+
 </body>
 </html>

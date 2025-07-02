@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>💡 รายการคำร้อง - ไฟฟ้า</title>
+  <style>@import url('https://fonts.googleapis.com/css2?family=Kanit&display=swap');
+  body{font-family:'Kanit',sans-serif;background:linear-gradient(to bottom right,#f0fdf4,#e0f2fe);padding:40px;}
+  h2{text-align:center;color:#166534;font-size:28px;margin-bottom:20px;}
+  .top-bar{text-align:left;margin-bottom:30px;}
+  .back-btn{background:#22c55e;color:white;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:bold;}
+  .back-btn:hover{background:#16a34a;}
+  table{width:100%;border-collapse:collapse;background:white;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+  th,td{padding:14px;text-align:center;border-bottom:1px solid #e2e8f0;}
+  th{background:#14532d;color:white;}
+  tr:hover{background:#f0fdf4;}
+  img{max-width:120px;max-height:100px;border-radius:6px;}
+  video{max-width:300px;max-height:200px;border-radius:6px;}
+  .status{font-weight:bold;}
+  .status.รอตรวจสอบ,.status.pending{color:#f97316;}
+  .status.เสร็จสิ้น{color:#16a34a;}
+  a.map-link{color:#2563eb;text-decoration:none;font-weight:bold;}
+  a.map-link:hover{text-decoration:underline;}
+  </style>
+</head>
+<body>
+<div class="top-bar">
+  <a class="back-btn" href="/admin">🔙 กลับหน้าจัดการคำร้อง</a>
+</div>
+<h2>💡 รายการคำร้อง - ไฟฟ้า</h2>
+<table id="data-table"><thead><tr>
+<th>ชื่อ</th><th>เบอร์</th><th>ข้อความ</th><th>ไฟล์</th>
+<th>อนุมัติ</th><th>แผนก</th><th>สถานะ</th><th>แผนที่</th>
+</tr></thead><tbody></tbody></table>
+<script>
+async function loadData(){
+const res=await fetch('/data-processed?department='+encodeURIComponent('ไฟฟ้า'));
+const data=await res.json();const tbody=document.querySelector("tbody");
+tbody.innerHTML="";
+data.forEach(row=>{
+const statusText=row.status==='pending'?'กำลังตรวจสอบ':(row.status||'-');
+const mapLink=row.latitude&&row.longitude?`<a class="map-link" href="https://www.google.com/maps?q=${row.latitude},${row.longitude}" target="_blank">📍 แผนที่</a>`:"-";
+let files=[];try{files=row.photo?JSON.parse(row.photo):[];}catch(e){files=[];}
+const mediaHtml=files.map(file=>file.endsWith('.mp4')||file.endsWith('.mov')||file.endsWith('.avi')?
+`<video controls><source src="${file}" type="video/mp4">ไม่รองรับวิดีโอ</video>`:`<img src="${file}" alt="ไฟล์">`).join('<br>');
+const tr=document.createElement("tr");
+tr.innerHTML=`<td>${row.name}</td><td>${row.phone}</td><td>${row.message}</td>
+<td>${mediaHtml||'-'}</td><td>${row.approved===1?"✅":row.approved===0?"❌":"❓"}</td>
+<td>${row.department||"-"}</td><td class="status ${row.status}">${statusText}</td><td>${mapLink}</td>`;
+tbody.appendChild(tr);
+});}
+loadData();
+</script>
+</body>
+</html>
