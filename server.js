@@ -6,7 +6,6 @@ const mysql = require('mysql2');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const session = require('express-session');
-const bodyParser = require('body-parser');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
@@ -32,8 +31,8 @@ const storage = new CloudinaryStorage({
 });
 const upload = multer({ storage });
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static('public'));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'hi-form-secret',
